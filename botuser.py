@@ -14,9 +14,11 @@ from telegram.ext import (Updater, CommandHandler, CallbackQueryHandler, Message
 						  ConversationHandler)
 ############################### Bot ############################################
 
+
 def start(bot, update):
 	checkuser(update)
 	update.message.reply_text(main_menu_message(), reply_markup = main_menu_keyboard())
+
 
 def about_menu(bot, update):
 	query = update.callback_query
@@ -25,6 +27,7 @@ def about_menu(bot, update):
 		reply_markup=about_menu_keyboard(),
 		text=about_menu_message())
 
+
 def reg_menu(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
@@ -32,19 +35,22 @@ def reg_menu(bot, update):
 		text="Please type ChannelID",
 		reply_markup=reg_menu_keyboard())
 
+
 def pastein_menu(bot, update):
 	query = update.callback_query
 
 	bot.send_message(chat_id=query.message.chat_id,
 		text="Please type ChannelID")
 	return PASTEIN
-	
+
+
 def main_menu(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=main_menu_message(),
 		reply_markup=main_menu_keyboard())
+
 
 def view_menu(bot, update):
 	query = update.callback_query
@@ -53,12 +59,14 @@ def view_menu(bot, update):
 		text=view_menu_message(),
 		reply_markup=view_menu_keyboard())
 
+
 def view_submenu1(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 	 	message_id=query.message.message_id,
 	 	text=view_submenu1_message(),
 	 	reply_markup=view_submenu1_keyboard(query.message.chat_id))
+
 
 def view_submenu2(bot, update):
 	query = update.callback_query
@@ -67,12 +75,14 @@ def view_submenu2(bot, update):
 		text=view_submenu2_message(),
 		reply_markup=view_submenu2_keyboard())
 
+
 def view_submenu3(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=view_submenu3_message(),
 		reply_markup=view_submenu3_keyboard())
+
 
 def select_channels_menu(bot, update):
 	query = update.callback_query
@@ -92,6 +102,7 @@ def select_channels_menu(bot, update):
 		text=select_channels_message(),
 		reply_markup=InlineKeyboardMarkup(keyboard))
 
+
 def actionchannels_menu(bot, update):
 	query = update.callback_query
 
@@ -99,6 +110,7 @@ def actionchannels_menu(bot, update):
 		message_id=query.message.message_id,
 		text=actionchannels_message(),
 		reply_markup=actionchannels_keyboard(query['data']))
+
 
 def registredchannels_menu(bot, update):
 	query = update.callback_query
@@ -108,12 +120,14 @@ def registredchannels_menu(bot, update):
 		text=registeredchannels_message(),
 		reply_markup=registeredchannels_keyboard(query['data']))
 
+
 def allchannels_menu(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=allchannels_message(),
 		reply_markup=allchannels_keyboard())	
+
 
 def view_individual_menu(bot, update):
 	query = update.callback_query
@@ -122,12 +136,14 @@ def view_individual_menu(bot, update):
 		text=view_individual_message(),
 		reply_markup=view_individual_keyboard())	
 
+
 def demo_menu(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=demo_menu_message(),
 		reply_markup=demo_menu_keyboard())
+
 
 def demo_submenu(bot, update):
 	query = update.callback_query
@@ -136,12 +152,14 @@ def demo_submenu(bot, update):
 		text=demo_submenu_message(),
 		reply_markup=demo_submenu_keyboard())
 
+
 def settings_menu(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=settings_menu_message(),
 		reply_markup=settings_menu_keyboard())
+
 
 def possize_menu(bot, update):
 	query = update.callback_query
@@ -150,12 +168,14 @@ def possize_menu(bot, update):
 		text="Position size is the amount of BTC used per trade, we recommend using anywhere from 3-5% of total account to mitigate risk")		
 	return POS_SIZE
 
+
 def spread_menu(bot, update):
 	query = update.callback_query
 
 	bot.send_message(chat_id=query.message.chat_id,
 		text="The spread percent is a percentage added to bid price to increase chance of being executed. A response of '2.5' will add 2.5% to the bid price I.E: if current market price is $100 it will set the bid at $102.5")
 	return SPREAD
+
 
 def proffit_menu(bot, update):
 	query = update.callback_query
@@ -164,6 +184,7 @@ def proffit_menu(bot, update):
 		text="Take profit is the price at which you want the trade to close at a profit, this is entered as a percentage that is added to the bid price executed. I.E: a response of '30', for an order executed at $100 will set a take profit at $130\", like wise a response of '250' sets the take profit at $250 or 250%")
 	return TAKE_PROFIT
 
+
 def stoploss_menu(bot, update):
 	query = update.callback_query
 
@@ -171,12 +192,14 @@ def stoploss_menu(bot, update):
 		text="Stop loss is the price at which you want the trade to close at a loss, this is entered as a percentage that is subtracted to the bid price executed. I.E a reponse of '10' for an order executed at $100 will set the stop loss at $90, like wise a response of '80' sets the stop loss at $20 or -80%, valid responses range from 1-99")
 	return STOP_LOSS
 
+
 def trigger_menu(bot, update):
 	query = update.callback_query
 
 	bot.send_message(chat_id=query.message.chat_id,
 		text="Hidden")
 	return TRIGGER
+
 
 def apikey_menu(bot, update):
 	query = update.callback_query
@@ -190,12 +213,14 @@ def apikey_menu(bot, update):
 			text="Please enter your Binance API key in format 'api_key:private_key' and include the semi-colon")		
 		return Binance_API
 
+
 def settings_submenu1(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=settings_submenu1_message(),
 		reply_markup=settings_submenu1_keyboard())
+
 
 def settings_submenu2(bot, update):
 	query = update.callback_query
@@ -204,12 +229,14 @@ def settings_submenu2(bot, update):
 		text=settings_submenu2_message(),
 		reply_markup=settings_submenu2_keyboard())
 
+
 def settings_submenu3(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=settings_submenu3_message(),
 		reply_markup=settings_submenu3_keyboard())
+
 
 def actions_menu(bot, update):
 	query = update.callback_query
@@ -218,12 +245,14 @@ def actions_menu(bot, update):
 		text=actions_menu_message(),
 		reply_markup=actions_menu_keyboard())
 
+
 def actions_submenu1(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=actions_submenu1_message(),
 		reply_markup=actions_submenu1_keyboard())
+
 
 def actions_submenu2(bot, update):
 	query = update.callback_query
@@ -232,12 +261,14 @@ def actions_submenu2(bot, update):
 		text=actions_submenu2_message(),
 		reply_markup=actions_submenu2_keyboard())
 
+
 def activepos_menu(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=activepos_menu_message(),
 		reply_markup=activepos_menu_keyboard())
+
 
 def closeorders_menu(bot, update):
 	query = update.callback_query
@@ -246,12 +277,14 @@ def closeorders_menu(bot, update):
 		text=closeorders_menu_message(),
 		reply_markup=closeorders_menu_keyboard())	
 
+
 def pay_menu(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=pay_menu_message(),
 		reply_markup=pay_menu_keyboard())
+
 
 def pay_submenu(bot, update):
 	query = update.callback_query
@@ -262,9 +295,20 @@ def pay_submenu(bot, update):
 
 
 ############################ Keyboards #########################################
+def demo_submenu_keyboard():
+	keyboard = [[InlineKeyboardButton('Register', callback_data='')],]
+	return InlineKeyboardMarkup(keyboard)
+
+
+def pay_submenu_keyboard():
+	keyboard = [[InlineKeyboardButton('Register', callback_data='')],]
+	return InlineKeyboardMarkup(keyboard)
+
+
 def welcome_menu_keyboard():
 	keyboard = [[InlineKeyboardButton('Register', callback_data='')],]
 	return InlineKeyboardMarkup(keyboard)
+
 
 def reg_menu_keyboard():
 	keyboard = [[InlineKeyboardButton('Demo', callback_data='demo_afterreg')],
@@ -272,19 +316,23 @@ def reg_menu_keyboard():
 				[InlineKeyboardButton('Main menu', callback_data='main')],]
 	return InlineKeyboardMarkup(keyboard)
 
+
 def about_menu_keyboard():
 	keyboard = [[InlineKeyboardButton('Main menu', callback_data='main')],]
 	return InlineKeyboardMarkup(keyboard)
 
+
 def viewactive_positions_keyboard():
 	keyboard = [[InlineKeyboardButton('Actions', callback_data='actions')],]
 	return InlineKeyboardMarkup(keyboard)
+
 
 def closeactive_orders_keyboard(order_id):
 	keyboard = [[InlineKeyboardButton('All Orders', callback_data='all_ordersclose')],
 		[InlineKeyboardButton('Select Orders', callback_data='select_ordersclose_'+str(order_id))],
 		[InlineKeyboardButton('Actions', callback_data='actions')],]
 	return InlineKeyboardMarkup(keyboard)
+
 
 def main_menu_keyboard():
 	keyboard = [[InlineKeyboardButton('About', callback_data='about')],
@@ -301,14 +349,16 @@ def view_menu_keyboard():
 	keyboard = [[InlineKeyboardButton('Registered Channels', callback_data='vs1')],
 			[InlineKeyboardButton('Check Wallet Balance', callback_data='vs2')],
 			[InlineKeyboardButton('Position History & Performance', callback_data='vs3')],
-			[InlineKeyboardButton('Main menu', callback_data='main')],]
+			[InlineKeyboardButton('Main menu', callback_data='main')]]
 	return InlineKeyboardMarkup(keyboard)
+
 
 def actionchannels_keyboard(channel_id):
 	keyboard = [[InlineKeyboardButton('Active Positions', callback_data='viewactive_'+str(channel_id))],
 			[InlineKeyboardButton('Close Active Orders', callback_data='closeactive_'+str(channel_id))],
-			[InlineKeyboardButton('Actions menu', callback_data='actions')],]
+			[InlineKeyboardButton('Actions menu', callback_data='actions')]]
 	return InlineKeyboardMarkup(keyboard)	
+
 
 def registeredchannels_keyboard(channel_id):
 	keyboard = [[InlineKeyboardButton('Disable', callback_data='disable_'+str(channel_id))],
@@ -316,6 +366,7 @@ def registeredchannels_keyboard(channel_id):
 			[InlineKeyboardButton('Disable All', callback_data='disable_all')],
 			[InlineKeyboardButton('View menu', callback_data='view')],]
 	return InlineKeyboardMarkup(keyboard)	
+
 
 def allchannels_keyboard():
 	keyboard = [[InlineKeyboardButton('Best Channel', callback_data='vs1_51')],
@@ -325,6 +376,7 @@ def allchannels_keyboard():
 			[InlineKeyboardButton('View menu', callback_data='view')],]
 	return InlineKeyboardMarkup(keyboard)
 
+
 def view_individual_keyboard():
 	keyboard = [[InlineKeyboardButton('Last Position', callback_data='vs1_41')],
 			[InlineKeyboardButton('Last Five', callback_data='vs1_42')],
@@ -333,6 +385,7 @@ def view_individual_keyboard():
 			[InlineKeyboardButton('Worst Play', callback_data='vs1_45')],
 			[InlineKeyboardButton('Main menu', callback_data='view')],]
 	return InlineKeyboardMarkup(keyboard)
+
 
 def view_submenu1_keyboard(user_id):
 	channels = getchannels(user_id)
@@ -355,6 +408,7 @@ def view_submenu1_keyboard(user_id):
 
 	return InlineKeyboardMarkup(keyboard)
 
+
 def view_submenu2_keyboard():
 	keyboard = [[InlineKeyboardButton('Bittrex', callback_data='vs1_21')],
 			[InlineKeyboardButton('Binance', callback_data='vs1_22')],
@@ -362,11 +416,13 @@ def view_submenu2_keyboard():
 			[InlineKeyboardButton('View menu', callback_data='view')]]
 	return InlineKeyboardMarkup(keyboard)
 
+
 def view_submenu3_keyboard():
 	keyboard = [[InlineKeyboardButton('All Channels', callback_data='vs1_31')],
 			[InlineKeyboardButton('Individual Channel', callback_data='vs1_32')],
 			[InlineKeyboardButton('View menu', callback_data='view')]]
 	return InlineKeyboardMarkup(keyboard)
+
 
 def demo_menu_keyboard():
 	keyboard = [[InlineKeyboardButton('ON', callback_data='m2_1')],
@@ -382,11 +438,13 @@ def settings_menu_keyboard():
 			[InlineKeyboardButton('Main menu', callback_data='main')]]
 	return InlineKeyboardMarkup(keyboard)
 
+
 def settings_submenu1_keyboard():
 	keyboard = [[InlineKeyboardButton('Bittrex API', callback_data='ss1_1')],
 			[InlineKeyboardButton('Binance API', callback_data='ss1_2')],
 			[InlineKeyboardButton('Settings menu', callback_data='settings')]]
 	return InlineKeyboardMarkup(keyboard)
+
 
 def settings_submenu2_keyboard():
 	keyboard = [[InlineKeyboardButton('Yes', callback_data='ss2_1')],
@@ -404,11 +462,13 @@ def settings_submenu3_keyboard():
 			[InlineKeyboardButton('Settings menu', callback_data='settings')]]
 	return InlineKeyboardMarkup(keyboard)
 
+
 def actions_menu_keyboard():
 	keyboard = [[InlineKeyboardButton('Offline Broadcast (Demo only)', callback_data='as1')],
 			[InlineKeyboardButton('Select Channel', callback_data='as2')],
 			[InlineKeyboardButton('Main menu', callback_data='main')]]
 	return InlineKeyboardMarkup(keyboard)
+
 
 def actions_submenu1_keyboard():
 	keyboard = [[InlineKeyboardButton('Bittrex', callback_data='am1_11')],
@@ -416,17 +476,20 @@ def actions_submenu1_keyboard():
 			[InlineKeyboardButton('Actions menu', callback_data='actions')]]
 	return InlineKeyboardMarkup(keyboard)
 
+
 def actions_submenu2_keyboard():
 	keyboard = [[InlineKeyboardButton('Active Positions', callback_data='am2_11')],
 			[InlineKeyboardButton('Close Active Orders', callback_data='am2_12')],
 			[InlineKeyboardButton('Main menu', callback_data='main')]]
 	return InlineKeyboardMarkup(keyboard)
 
+
 def activepos_menu_keyboard():
 	keyboard = [[InlineKeyboardButton('View Active Positions', callback_data='ap1_11')],
 			[InlineKeyboardButton('Cancel Active Orders', callback_data='ap1_12')],
 			[InlineKeyboardButton('Back', callback_data='actions')]]
 	return InlineKeyboardMarkup(keyboard)
+
 
 def closeorders_menu_keyboard():
 	keyboard = [[InlineKeyboardButton('All Orders', callback_data='ap2_11')],
@@ -447,6 +510,7 @@ def pay_menu_keyboard():
 # def reg_menu_message():
 # 	return 'Welcome, your 7-day FREE trial begins once you\'ve entered your Channel\'s channelID'
 
+
 def about_menu_message():
 	return 'JanusBot is a tool for users to execute trade opportunities live sent by the channels their invested in without the need of leaving Telegram. By default, and for risk purposes dictated by the user\
 		we have the automation option turned off. To turn on automated orders, or the ability for the bot to execute orders for you the second they\'re sent out by channels, head over to Settings > Automation. An advantage of\
@@ -455,97 +519,126 @@ def about_menu_message():
 		all the channels. As well as the ability to view any active orders, and either cancel them, close them, or close just the winners or losers. Janus works with a preset risk strategy set by the user in the settings. Such options\
 		include positional size per play, spread percent, take profit, and stop loss. Since these tools aren\'t native in Bittrex or Binance, Janus uses triggers to switch orders from a take profit order to a stop loss if the price falls below\
 		a certain threshold. Janus is constantly being updated for bugs, new features, and performance.'
+
 def welcome_menu_message():
 	return 'Welcome to Janus, start by registering to gain access.'
+
 
 def main_menu_message():
 	return 'Welcome to Janus, start by registering to gain access.'
 
+
 def view_menu_message():
 	return 'Choose the option in menu:'
+
 
 def view_submenu1_message():
 	return 'Choose the option in menu:'
 
+
 def view_submenu2_message():
 	return 'Choose the option in menu:'
+
 
 def view_submenu3_message():
 	return 'Choose the option in menu:'
 
+
 def demo_menu_message():
 	return 'Entering demo mode will assign random variables, connection to your exchange will be currently disabled, to turn off demo mode, head back into demo setting and choose off. Do you wish to continue?'
+
 
 def demo_submenu_message():
 	return 'Choose the option in menu:'	
 
+
 def settings_menu_message():
 	return 'Choose the option in menu:'
+
 
 def settings_submenu1_message():
 	return 'Choose the option in menu:'
 
+
 def settings_submenu2_message():
 	return 'Choose the option in menu:'
+
 
 def settings_submenu3_message():
 	return 'Choose the option in menu:'
 
+
 def actions_menu_message():
 	return 'Choose the option in menu:'
+
 
 def actions_submenu1_message():
 	return 'Choose the option in menu:'	
 
+
 def actions_submenu2_message():
 	return 'Choose the option in menu:'	
+
 
 def pay_menu_message():
 	return 'Choose the option in menu:'
 
+
 def pay_submenu_message():
 	return 'Choose the option in menu:'	
+
 
 def activepos_menu_message():
 	return 'Choose the option in menu:'
 
+
 def closeorders_menu_message():
 	return 'Choose the option in menu:'
+
 
 def allchannels_message():
 	return 'Choose the option in menu:'
 
+
 def actionchannels_message():
 	return 'Choose the option in menu:'
+
 
 def select_channels_message():
 	return 'Choose the channel in menu:'
 
+
 def registeredchannels_message():
 	return 'Choose the channel in menu:'
 
+
 def view_individual_message():
 	return 'Choose the option in menu:'
+
 
 def error(bot, update, error):
 	"""Log Errors caused by Updates."""
 	logger.warning('Update "%s" caused error "%s"', update, error)
 
+
 def pay_newchannel(bot, update):
 	print('new')
 	return False
+
 
 def pay_renew(bot, update):
 	print('renew')
 	return False	
 
+
 def done(bot, update, user_data):
 
 	update.message.reply_text(""
 							  "{}"
-							  "Until next time!".format(facts_to_str(user_data)))
+							  "Until next time!")
 
 	return ConversationHandler.END
+
 
 def bittrex_api_choice(bot, update, user_data):
 	text = update.message.text
@@ -558,6 +651,7 @@ def bittrex_api_choice(bot, update, user_data):
 
 	return ConversationHandler.END
 
+
 def binance_api_choice(bot, update, user_data):
 	text = update.message.text
 
@@ -567,6 +661,7 @@ def binance_api_choice(bot, update, user_data):
 		reply_markup=main_menu_keyboard())
 
 	return ConversationHandler.END
+
 
 def pos_size_choice(bot, update, user_data):
 	text = update.message.text
@@ -578,6 +673,7 @@ def pos_size_choice(bot, update, user_data):
 
 	return ConversationHandler.END
 
+
 def spread_choice(bot, update, user_data):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
@@ -586,6 +682,7 @@ def spread_choice(bot, update, user_data):
 		reply_markup=main_menu_keyboard())
 
 	return ConversationHandler.END
+
 
 def proffit_choice(bot, update, user_data):
 	text = update.message.text
@@ -596,6 +693,7 @@ def proffit_choice(bot, update, user_data):
 
 	return ConversationHandler.END
 
+
 def stoploss_choice(bot, update, user_data):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
@@ -604,6 +702,7 @@ def stoploss_choice(bot, update, user_data):
 		reply_markup=main_menu_keyboard())
 
 	return ConversationHandler.END
+
 
 def pastein_choise(bot, update, user_data):
 	text = update.message.text
@@ -617,6 +716,7 @@ def pastein_choise(bot, update, user_data):
 
 	return ConversationHandler.END
 
+
 def trigger_choice(bot, update, user_data):
 	text = update.message.text
 
@@ -626,6 +726,7 @@ def trigger_choice(bot, update, user_data):
 		reply_markup=main_menu_keyboard())
 
 	return ConversationHandler.END
+
 
 def action_demoon(bot, update):
 	query = update.callback_query
@@ -652,6 +753,7 @@ def action_autoon(bot, update):
 		text="All incoming ticker broadcasts will be automatically executed",
 		reply_markup=main_menu_keyboard())
 	AutomationOn(query.message.chat_id)
+
 
 def action_autooff(bot, update):
 	query = update.callback_query
@@ -708,8 +810,8 @@ def binance_bal(bot, update):
 	except Exception as e:
 		bot.edit_message_text(chat_id=query.message.chat_id,
 			message_id=query.message.message_id,
-			text=e+"",
-			reply_markup=main_menu_keyboard())
+			reply_markup=main_menu_keyboard(),
+			text=str(e)+"")
 
 
 def both_bal(bot, update):
@@ -737,6 +839,7 @@ def both_bal(bot, update):
 		text = text,
 		reply_markup = main_menu_keyboard())
 
+
 def enable_channel(bot, update):
 	query = update.callback_query
 	channel_id = query['data']
@@ -747,7 +850,8 @@ def enable_channel(bot, update):
 		message_id = query.message.message_id,
 		text  ="Selected channel have been enabled",
 		reply_markup = main_menu_keyboard())
-	
+
+
 def disable_allchannel(bot, update):
 	query = update.callback_query
 	channel_id = query['data']
@@ -758,6 +862,7 @@ def disable_allchannel(bot, update):
 		message_id=query.message.message_id,
 		text="Disabled ALL channels",
 		reply_markup=main_menu_keyboard())
+
 
 def disable_channel(bot, update):
 	query = update.callback_query
@@ -770,6 +875,7 @@ def disable_channel(bot, update):
 		text="Selected channel have been disabled",
 		reply_markup=main_menu_keyboard())
 
+
 def viewactive_positions_menu(bot, update):
 	query = update.callback_query
 
@@ -780,6 +886,7 @@ def viewactive_positions_menu(bot, update):
 		message_id=query.message.message_id,
 		text="List of current active orders: ",
 		reply_markup=viewactive_positions_keyboard())
+
 
 def closeactive_orders_menu(bot, update):
 	query = update.callback_query
@@ -792,6 +899,7 @@ def closeactive_orders_menu(bot, update):
 		text="Choose the option in menu:",
 		reply_markup=closeactive_orders_keyboard(order_id))
 
+
 def select_ordersclose_menu(bot, update):
 	query = update.callback_query
 
@@ -803,6 +911,7 @@ def select_ordersclose_menu(bot, update):
 		text="Choose the option in menu:",
 		reply_markup=main_menu_keyboard())
 
+
 def all_ordersclose(bot, update):
 	query = update.callback_query
 
@@ -813,6 +922,7 @@ def all_ordersclose(bot, update):
 		text="Choose the option in menu:",
 		reply_markup=main_menu_keyboard())
 
+
 def paste_inchannelid(bot, update):
 	query = update.callback_query
 
@@ -821,6 +931,7 @@ def paste_inchannelid(bot, update):
 		message_id=query.message.message_id,
 		text="Choose the option in menu:",
 		reply_markup=main_menu_keyboard())
+
 
 import logging
 

@@ -15,7 +15,7 @@ def getbinancebalance(api_key, api_secret):
 	client = Client(api_key, api_secret)
 
 	#js_info = client.get_account(timestamp=time.time())
-	js_info = client.get_asset_balance(asset = 'BTC')
+	js_info = client.get_asset_balance(asset = 'BTC', recvWindow= 5000)
 	print(js_info)
 
 	return js_info

@@ -1,14 +1,16 @@
 import pymysql
 
+
 def create_connection():
 	return pymysql.connect(
-		host='localhost',
-		user='tm_user',
-		password='3mer9cuc0vIlrfOv',
+		host='104.248.72.209',
+		user='tm_user2',
+		password='evn3n8FD1JL33eha',
 		db='tm'
 	)
 
-def save(connection: pymysql.connections.Connection, table, data):
+
+def save(connection, table, data):
 	new_data = {}
 
 	for key, value in data.items():
