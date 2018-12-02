@@ -763,8 +763,8 @@ def bittrex_bal(bot, update):
 	try:
 		full_api = getbittrexapi(query.message.chat_id)['bittrex_api']
 		#print(full_api)
-		api_key = full_api.split(':')[0]
-		api_secret = full_api.split(':')[1]
+		api_key = full_api.split(':')[0].strip()
+		api_secret = full_api.split(':')[1].strip()
 		bal = getbittrexbalance(api_key, api_secret)
 		print(bal['result'])
 
@@ -786,8 +786,8 @@ def binance_bal(bot, update):
 		full_api = getbinanceapi(query.message.chat_id)['binance_api']
 
 		#print(full_api)
-		api_key = full_api.split(':')[0]
-		api_secret = full_api.split(':')[1]
+		api_key = full_api.split(':')[0].strip()
+		api_secret = full_api.split(':')[1].strip()
 		bal = getbinancebalance(api_key, api_secret)	
 		if bal:
 			bot.edit_message_text(chat_id=query.message.chat_id,
@@ -812,24 +812,24 @@ def both_bal(bot, update):
 	text = ""
 	full_api = getbinanceapi(query.message.chat_id)['binance_api']
 
-	api_key = full_api.split(':')[0].trim()
-	api_secret = full_api.split(':')[1].trim()
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	bal = getbinancebalance(api_key, api_secret)
 
 	if bal:
-		text += "Binance "+str(bal['Currency'])+" Balance: "+str(bal['Balance'])+"\n"
+		text += "Binance "+str(bal['asset'])+" Balance: "+str(bal['free'])+"\n"
 
 	full_api = getbittrexapi(query.message.chat_id)['bittrex_api']
-	api_key = full_api.split(':')[0]
-	api_secret = full_api.split(':')[1]
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	bal = getbittrexbalance(api_key, api_secret)
 	if bal:
 		text += "Bittrex "+str(bal['result']['Currency'])+" Balance: "+str(bal['result']['Balance'])
 
 	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id = query.message.message_id,
-		text = text,
-		reply_markup = main_menu_keyboard())
+		message_id=query.message.message_id,
+		text=text,
+		reply_markup=main_menu_keyboard())
 
 
 def enable_channel(bot, update):
@@ -846,7 +846,7 @@ def enable_channel(bot, update):
 
 def disable_allchannel(bot, update):
 	query = update.callback_query
-	channel_id = query['data']
+	#channel_id = query['data']
 	user_id = query.message.chat_id
 
 	disable_allchannelsql(user_id)
@@ -935,7 +935,7 @@ Bittrex_API, Binance_API, POS_SIZE, SPREAD, TAKE_PROFIT, STOP_LOSS, TRIGGER, PAS
 
 
 ############################# Handlers #########################################
-updater = Updater('692136526:AAGbRDOH2uO35F6Em843eQDVLpiW6MFcLmk')
+updater = Updater(token='692136526:AAGbRDOH2uO35F6Em843eQDVLpiW6MFcLmk', request_kwargs={'proxy_url':'socks5://138.68.6.133:8898'})
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CallbackQueryHandler(main_menu, pattern='main$'))

@@ -199,7 +199,7 @@ def setBittrexAPI(api, user_id):
 def setBinanceAPI(api, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "UPDATE `users` SET `binance_api`= '"+trim(api)+"' WHERE `tm_id` = "+str(user_id)
+	sql = "UPDATE `users` SET `binance_api`= '"+api.strip()+"' WHERE `tm_id` = "+str(user_id)
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
