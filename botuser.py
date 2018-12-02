@@ -1,23 +1,17 @@
 #!/usr/bin/python3
-import pymysql
-import re
-import json
-from user import * 
+from user import *
+import logging
 from binance_exchange import *
-from bittrex_exchange import * 
-from connection import create_connection, save
+from bittrex_exchange import *
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram import ReplyKeyboardMarkup
-from telegram.ext import InlineQueryHandler
-from telegram import InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import (Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, RegexHandler,
 						  ConversationHandler)
 ############################### Bot ############################################
 
 
-def start(bot, update):
+def start(update):
 	checkuser(update)
-	update.message.reply_text(main_menu_message(), reply_markup = main_menu_keyboard())
+	update.message.reply_text(main_menu_message(), reply_markup=main_menu_keyboard())
 
 
 def about_menu(bot, update):
@@ -54,10 +48,8 @@ def main_menu(bot, update):
 
 def view_menu(bot, update):
 	query = update.callback_query
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text=view_menu_message(),
-		reply_markup=view_menu_keyboard())
+	bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
+		text=view_menu_message(), reply_markup=view_menu_keyboard())
 
 
 def view_submenu1(bot, update):
@@ -640,7 +632,7 @@ def done(bot, update, user_data):
 	return ConversationHandler.END
 
 
-def bittrex_api_choice(bot, update, user_data):
+def bittrex_api_choice(update, user_data):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -652,7 +644,7 @@ def bittrex_api_choice(bot, update, user_data):
 	return ConversationHandler.END
 
 
-def binance_api_choice(bot, update, user_data):
+def binance_api_choice(update, user_data):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -663,7 +655,7 @@ def binance_api_choice(bot, update, user_data):
 	return ConversationHandler.END
 
 
-def pos_size_choice(bot, update, user_data):
+def pos_size_choice(update, user_data):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -674,7 +666,7 @@ def pos_size_choice(bot, update, user_data):
 	return ConversationHandler.END
 
 
-def spread_choice(bot, update, user_data):
+def spread_choice( update, user_data):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
 	setSpreadPercent(text, user_id)
@@ -684,7 +676,7 @@ def spread_choice(bot, update, user_data):
 	return ConversationHandler.END
 
 
-def proffit_choice(bot, update, user_data):
+def proffit_choice(update, user_data):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
 	setTakeProfit(text, user_id)
@@ -694,7 +686,7 @@ def proffit_choice(bot, update, user_data):
 	return ConversationHandler.END
 
 
-def stoploss_choice(bot, update, user_data):
+def stoploss_choice(update, user_data):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
 	setStopLoss(text, user_id)
@@ -704,7 +696,7 @@ def stoploss_choice(bot, update, user_data):
 	return ConversationHandler.END
 
 
-def pastein_choise(bot, update, user_data):
+def pastein_choise(update, user_data):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -717,7 +709,7 @@ def pastein_choise(bot, update, user_data):
 	return ConversationHandler.END
 
 
-def trigger_choice(bot, update, user_data):
+def trigger_choice(update, user_data):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -820,8 +812,8 @@ def both_bal(bot, update):
 	text = ""
 	full_api = getbinanceapi(query.message.chat_id)['binance_api']
 
-	api_key = full_api.split(':')[0]
-	api_secret = full_api.split(':')[1]
+	api_key = full_api.split(':')[0].trim()
+	api_secret = full_api.split(':')[1].trim()
 	bal = getbinancebalance(api_key, api_secret)
 
 	if bal:
@@ -932,8 +924,6 @@ def paste_inchannelid(bot, update):
 		text="Choose the option in menu:",
 		reply_markup=main_menu_keyboard())
 
-
-import logging
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',

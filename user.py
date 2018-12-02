@@ -189,7 +189,7 @@ def DemoOff(user_id):
 def setBittrexAPI(api, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "UPDATE `users` SET `bittrex_api`= '"+trim(api)+"' WHERE `tm_id` = "+str(user_id)
+	sql = "UPDATE `users` SET `bittrex_api`= '"+api.trim()+"' WHERE `tm_id` = "+str(user_id)
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
