@@ -4,6 +4,15 @@ import json
 from connection import create_connection, save
 
 
+def getbroadcastmsgbyid(message_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `message` FROM `broadcasting_msg` WHERE `id` = "+str(message_id))
+
+	message = cursor.fetchone()
+	connection.close()
+	return message
+
 
 def setbroadcastmessages_sended(message_id):
 	connection = create_connection()
@@ -14,6 +23,7 @@ def setbroadcastmessages_sended(message_id):
 	connection.commit()
 	connection.close()
 
+
 def getbroadcastmessages():
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -23,8 +33,8 @@ def getbroadcastmessages():
 	for ch in cursor.fetchall():
 		messages.append(ch)
 	connection.close()
-
 	return messages
+
 
 def pasteinchannels(channel_id, user_id):
 	connection = create_connection()

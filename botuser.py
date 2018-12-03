@@ -608,7 +608,7 @@ def view_individual_message():
 	return 'Choose the option in menu:'
 
 
-def error(bot, update, error):
+def error(update, error):
 	"""Log Errors caused by Updates."""
 	logger.warning('Update "%s" caused error "%s"', update, error)
 
@@ -623,7 +623,7 @@ def pay_renew(bot, update):
 	return False	
 
 
-def done(bot, update, user_data):
+def done(update):
 
 	update.message.reply_text(""
 							  "{}"
@@ -632,7 +632,7 @@ def done(bot, update, user_data):
 	return ConversationHandler.END
 
 
-def bittrex_api_choice(update, user_data):
+def bittrex_api_choice(update):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -644,7 +644,7 @@ def bittrex_api_choice(update, user_data):
 	return ConversationHandler.END
 
 
-def binance_api_choice(update, user_data):
+def binance_api_choice(update):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -655,7 +655,7 @@ def binance_api_choice(update, user_data):
 	return ConversationHandler.END
 
 
-def pos_size_choice(update, user_data):
+def pos_size_choice(update):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -666,7 +666,7 @@ def pos_size_choice(update, user_data):
 	return ConversationHandler.END
 
 
-def spread_choice( update, user_data):
+def spread_choice( update):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
 	setSpreadPercent(text, user_id)
@@ -676,7 +676,7 @@ def spread_choice( update, user_data):
 	return ConversationHandler.END
 
 
-def proffit_choice(update, user_data):
+def proffit_choice(update):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
 	setTakeProfit(text, user_id)
@@ -686,7 +686,7 @@ def proffit_choice(update, user_data):
 	return ConversationHandler.END
 
 
-def stoploss_choice(update, user_data):
+def stoploss_choice(update):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
 	setStopLoss(text, user_id)
@@ -696,7 +696,7 @@ def stoploss_choice(update, user_data):
 	return ConversationHandler.END
 
 
-def pastein_choise(update, user_data):
+def pastein_choise(update):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -709,7 +709,7 @@ def pastein_choise(update, user_data):
 	return ConversationHandler.END
 
 
-def trigger_choice(update, user_data):
+def trigger_choice(update):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -918,11 +918,31 @@ def all_ordersclose(bot, update):
 def paste_inchannelid(bot, update):
 	query = update.callback_query
 
-	
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text="Choose the option in menu:",
 		reply_markup=main_menu_keyboard())
+
+
+def broadcast_answer(bot, update):
+	query = update.callback_query
+	message_id = query['data'].replace('bmy_', '')
+	msg = getbroadcastmsgbyid(message_id)
+	chat_id = query.message.chat_id
+
+	m = re.search(r"(.*):(.*)@(.*)", msg['message'])
+
+	if m.group(0) and m.group(1) and m.group(2) and m.group(3):
+		full_api = getbinanceapi(chat_id)['binance_api']
+
+		# print(full_api)
+		api_key = full_api.split(':')[0].strip()
+		api_secret = full_api.split(':')[1].strip()
+		#binance_create_test_order(api_key, api_secret, symbol='NEOBTC', side='BUY', type='MARKET', quantity=1)
+		#binance_create_order(api_key, api_secret, symbol='NEOBTC', side='BUY', price='0.001931')
+		binance_order_limit_buy(api_key, api_secret, symbol='NEOBTC', side='BUY', price='0.001931', quantity=1)
+		message = "Bid order has been placed for '"+str(m.group(1)).upper()+"':'"+str(m.group(2)).upper()+"' at '"+str(m.group(3)).upper()+"' BTC"
+		bot.send_message(chat_id=chat_id, text=message)
 
 
 # Enable logging
@@ -960,8 +980,8 @@ updater.dispatcher.add_handler(CallbackQueryHandler(closeactive_orders_menu, pat
 updater.dispatcher.add_handler(CallbackQueryHandler(action_demoon, pattern='m2_1'))
 updater.dispatcher.add_handler(CallbackQueryHandler(action_demooff, pattern='m2_2'))
 
-updater.dispatcher.add_handler(CallbackQueryHandler(action_autoon, pattern='ss2_1'))
-updater.dispatcher.add_handler(CallbackQueryHandler(action_autooff, pattern='ss2_2'))
+updater.dispatcher.add_handler(CallbackQueryHandler(action_autoon, pattern='^ss2_1$'))
+updater.dispatcher.add_handler(CallbackQueryHandler(action_autooff, pattern='^ss2_2$'))
 
 #vs1_1
 #all_ordersclose select_ordersclose
@@ -979,6 +999,9 @@ updater.dispatcher.add_handler(CallbackQueryHandler(actionchannels_menu, pattern
 updater.dispatcher.add_handler(CallbackQueryHandler(disable_allchannel, pattern='^disable_all$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(disable_channel, pattern='^disable_v'))
 updater.dispatcher.add_handler(CallbackQueryHandler(enable_channel, pattern='^enable_'))
+
+#bmy_
+updater.dispatcher.add_handler(CallbackQueryHandler(broadcast_answer, pattern='^bmy_'))
 
 updater.dispatcher.add_handler(CallbackQueryHandler(select_channels_menu, pattern='^as2$'))
 
