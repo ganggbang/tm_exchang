@@ -3,6 +3,27 @@ import re
 import json
 from connection import create_connection, save
 
+def get_orders(user_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `ticker`,`exchange`, `last_active` FROM `orders` WHERE `tm_id` = "+str(user_id))
+
+	tickers = []
+	for t in cursor.fetchall():
+		tickers.append(t)
+	connection.close()
+	return tickers
+
+def insert_order(user_id, ticker, exchange, orderId):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	sql = "INSERT INTO `orders`(`tm_id`, `ticker`, `exchange`, `orderId`,`last_active`) VALUES ("+str(user_id)+", '"+ticker+"', '"+exchange+"', '"+str(orderId)+"', NOW())"
+	cursor.execute(sql)
+	cursor = connection.cursor()
+	connection.commit()
+	cursor.close()
+	connection.close()
+
 
 def getbroadcastmsgbyid(message_id):
 	connection = create_connection()
@@ -106,11 +127,22 @@ def getusingchannels(channels, user_id):
 
 	return dict_channels
 
-def getchannels(user_id):
+
+def getticker_channel(channel_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `ticker` FROM `channels` WHERE `is_enable` = 1 AND `id` = "+str(channel_id))
+
+	ticker = cursor.fetchone()
+	connection.close()
+	return ticker
+
+
+def getchannels():
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
 	#cursor.execute("SELECT `channel_name`, `id`, `is_enable` FROM `using_channels` WHERE `user_id` = "+str(user_id))
-	cursor.execute("SELECT `channel_name`, `id` FROM `channels` WHERE `is_enable` = 1")
+	cursor.execute("SELECT `channel_name`, `id`, `is_enable` FROM `channels` WHERE `is_enable` = 1")
 
 	channels = []
 	for ch in cursor.fetchall():
@@ -128,10 +160,10 @@ def checkuser(update):
 		"username": update['message']['chat']['username']
 	}
 
-	connection = create_connection()
-	if existing_user(connection, user_id) is False:
+	if existing_user(user_id) is False:
+		connection = create_connection()
 		save(connection, 'users', user)
-	connection.close()
+		connection.close()
 
 def existing_user(user_id):
 	connection = create_connection()

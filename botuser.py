@@ -9,7 +9,7 @@ from telegram.ext import (Updater, CommandHandler, CallbackQueryHandler, Message
 ############################### Bot ############################################
 
 
-def start(update):
+def start(bot, update):
 	checkuser(update)
 	update.message.reply_text(main_menu_message(), reply_markup=main_menu_keyboard())
 
@@ -78,10 +78,9 @@ def view_submenu3(bot, update):
 
 def select_channels_menu(bot, update):
 	query = update.callback_query
-	#user_id = query.message.chat_id
 	channels = getchannels()
 	keyboard = []
-	i = 1
+
 	for ch in channels:
 		if ch['is_enable'] == 1:
 			keyboard.append([InlineKeyboardButton(ch['channel_name'], callback_data='as2_1'+str(ch['id']))])
@@ -101,7 +100,7 @@ def actionchannels_menu(bot, update):
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=actionchannels_message(),
-		reply_markup=actionchannels_keyboard(query['data']))
+		reply_markup=actionchannels_keyboard(query['data'].replace('as2_1', '')))
 
 
 def registredchannels_menu(bot, update):
@@ -314,8 +313,10 @@ def about_menu_keyboard():
 	return InlineKeyboardMarkup(keyboard)
 
 
-def viewactive_positions_keyboard():
-	keyboard = [[InlineKeyboardButton('Actions', callback_data='actions')],]
+def active_positions_keyboard(channel_id):
+	keyboard = [[InlineKeyboardButton('View Active Positions', callback_data='viewactivepos_'+str(channel_id))],
+				[InlineKeyboardButton('Cancel Active Orders', callback_data='cancelactionsorders_'+str(channel_id))],
+		[InlineKeyboardButton('Actions', callback_data='actions')],]
 	return InlineKeyboardMarkup(keyboard)
 
 
@@ -346,7 +347,7 @@ def view_menu_keyboard():
 
 
 def actionchannels_keyboard(channel_id):
-	keyboard = [[InlineKeyboardButton('Active Positions', callback_data='viewactive_'+str(channel_id))],
+	keyboard = [[InlineKeyboardButton('Active Positions', callback_data='active_'+str(channel_id))],
 			[InlineKeyboardButton('Close Active Orders', callback_data='closeactive_'+str(channel_id))],
 			[InlineKeyboardButton('Actions menu', callback_data='actions')]]
 	return InlineKeyboardMarkup(keyboard)	
@@ -608,7 +609,7 @@ def view_individual_message():
 	return 'Choose the option in menu:'
 
 
-def error(update, error):
+def error(bot, update, error):
 	"""Log Errors caused by Updates."""
 	logger.warning('Update "%s" caused error "%s"', update, error)
 
@@ -757,48 +758,65 @@ def action_autooff(bot, update):
 	AutomationOff(query.message.chat_id)
 
 
-def bittrex_bal(bot, update):
+def bittrex_bal(user_id):
+	full_api = getbittrexapi(user_id)['bittrex_api']
+
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
+
+	text = '**Bittrex** '
+	balances = bittrex_getbalances(api_key, api_secret)
+	for balance in balances['result']:
+		if balance['Balance'] > 0:
+			text += balance['Currency'] + ': ' + str(balance['Balance']) + ' Available: ' + str(
+				balance['Available']) + '\n'
+	return text
+
+
+def bittrex_bal_menu(bot, update):
 	query = update.callback_query
 
 	try:
-		full_api = getbittrexapi(query.message.chat_id)['bittrex_api']
-		#print(full_api)
-		api_key = full_api.split(':')[0].strip()
-		api_secret = full_api.split(':')[1].strip()
-		bal = getbittrexbalance(api_key, api_secret)
-		print(bal['result'])
+		text = bittrex_bal(query.message.chat_id)
 
 		bot.edit_message_text(chat_id=query.message.chat_id,
 			message_id=query.message.message_id,
-			text="Bittrex "+str(bal['result']['Currency'])+" Balance: "+str(bal['result']['Balance']),
+			text=text,
 			reply_markup=main_menu_keyboard())	
 	except Exception as e:
 		bot.edit_message_text(chat_id=query.message.chat_id,
 			message_id=query.message.message_id,
-			text=e+"",
+			text=str(e)+"",
 			reply_markup=main_menu_keyboard())	
-	
 
-def binance_bal(bot, update):
+
+def binance_bal(user_id):
+	full_api = getbinanceapi(user_id)['binance_api']
+
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
+	balances = binance_getbalances(api_key, api_secret)
+
+	text = '**Binance** '
+	for balance in balances['balances']:
+		if float(balance['free']) > 0:
+			text += balance['asset'] + ': ' + str(balance['free']) + ' Available: ' + str(
+				balance['free']) + '\n'
+
+	return text
+
+
+def binance_bal_menu(bot, update):
 	query = update.callback_query
 
 	try:
-		full_api = getbinanceapi(query.message.chat_id)['binance_api']
 
-		#print(full_api)
-		api_key = full_api.split(':')[0].strip()
-		api_secret = full_api.split(':')[1].strip()
-		bal = getbinancebalance(api_key, api_secret)	
-		if bal:
-			bot.edit_message_text(chat_id=query.message.chat_id,
-				message_id=query.message.message_id,
-				text="Binance "+str(bal['asset'])+" Balance: "+str(bal['free']),
-				reply_markup=main_menu_keyboard())
-		else:
-			bot.edit_message_text(chat_id=query.message.chat_id,
-				message_id=query.message.message_id,
-				text="Binance Balance:",
-				reply_markup=main_menu_keyboard())
+		text = binance_bal(query.message.chat_id)
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			message_id=query.message.message_id,
+			text = text,
+			reply_markup=main_menu_keyboard())
+
 	except Exception as e:
 		bot.edit_message_text(chat_id=query.message.chat_id,
 			message_id=query.message.message_id,
@@ -809,22 +827,8 @@ def binance_bal(bot, update):
 def both_bal(bot, update):
 	query = update.callback_query
 
-	text = ""
-	full_api = getbinanceapi(query.message.chat_id)['binance_api']
-
-	api_key = full_api.split(':')[0].strip()
-	api_secret = full_api.split(':')[1].strip()
-	bal = getbinancebalance(api_key, api_secret)
-
-	if bal:
-		text += "Binance "+str(bal['asset'])+" Balance: "+str(bal['free'])+"\n"
-
-	full_api = getbittrexapi(query.message.chat_id)['bittrex_api']
-	api_key = full_api.split(':')[0].strip()
-	api_secret = full_api.split(':')[1].strip()
-	bal = getbittrexbalance(api_key, api_secret)
-	if bal:
-		text += "Bittrex "+str(bal['result']['Currency'])+" Balance: "+str(bal['result']['Balance'])
+	text = bittrex_bal(query.message.chat_id)
+	text += binance_bal(query.message.chat_id)
 
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
@@ -868,51 +872,119 @@ def disable_channel(bot, update):
 		reply_markup=main_menu_keyboard())
 
 
-def viewactive_positions_menu(bot, update):
+def cancelorder(bot, update):
+	query = update.callback_query
+	query_data = query['data'].replace('cancelorder_', '')
+	chat_id = query.message.chat_id
+
+	full_api = getbinanceapi(chat_id)['binance_api']
+
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
+
+	s = query_data.split('_')
+	channel_id = s[0]
+	symbol = s[1]
+	orderId = s[2]
+	result = binancecancel_order(api_key, api_secret, symbol=symbol, orderId=orderId)
+
+	keyboard = orders_keyboard(chat_id, channel_id)
+	bot.edit_message_text(chat_id=chat_id,
+		message_id=query.message.message_id,
+		text="Selected orders have been "+result['status']+": ",
+		reply_markup=keyboard)
+
+
+def orders_keyboard(chat_id, channel_id):
+	orders = get_orders(chat_id)
+
+	keyboard = []
+	for order in orders:
+		if order['exchange'] == 'BINANCE':
+			full_api = getbinanceapi(chat_id)['binance_api']
+
+			api_key = full_api.split(':')[0].strip()
+			api_secret = full_api.split(':')[1].strip()
+
+			binance_orders = binance_get_open_orders(api_key, api_secret, symbol=order['ticker'])
+
+			for bin_order in binance_orders:
+				keyboard.append([InlineKeyboardButton(order['ticker'] + ":BINNACE, Take-Profit, Bid Price: $X, Current Price: $X, Current return: X%, Time Active: X day, XX hours, XX minutes",
+													  callback_data='cancelorder_' + str(channel_id) + '_' + bin_order['ticker'] + '_' + str(bin_order['orderId']))])
+
+		if order['exchange'] == 'BITTREX':
+			full_api = getbittrexapi(chat_id)['bittrex_api']
+			api_key = full_api.split(':')[0].strip()
+			api_secret = full_api.split(':')[1].strip()
+
+			bittrex_orders = bittrex_get_open_orders(api_key, api_secret, market=order['ticker'])
+
+			for bit_order in bittrex_orders:
+				keyboard.append([InlineKeyboardButton(bit_order['ticker']+":BITTREX, Take-Profit, Bid Price: $X, Current Price: $X, Current return: X%, Time Active: X day, XX hours, XX minutes", callback_data='cancelorder_'+str(channel_id)+'_'+bit_order['ticker']+'_'+str(order['orderId']))])
+
+	keyboard.append([InlineKeyboardButton("Cancel ALL Orders", callback_data='cancelorder_all')])
+	keyboard.append([InlineKeyboardButton("Actions Menu", callback_data='actions')])
+
+	return InlineKeyboardMarkup(keyboard)
+
+
+def viewactivepos(bot, update):
+	query = update.callback_query
+	channel_id = query['data'].replace('viewactivepos_', '').replace('cancelactionsorders_', '')
+	chat_id = query.message.chat_id
+
+	keyboard = orders_keyboard(chat_id, channel_id)
+	bot.edit_message_text(chat_id=chat_id,
+		message_id=query.message.message_id,
+		text="Choose order for CANCEL: ",
+		reply_markup=keyboard)
+
+
+def active_positions_menu(bot, update):
 	query = update.callback_query
 
-	channel_id = query['data']
-	viewactive_positions(channel_id)
+	channel_id = query['data'].replace('active_','')
+	#viewactive_positions(channel_id)
 
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
-		text="List of current active orders: ",
-		reply_markup=viewactive_positions_keyboard())
+		text="Choose the option in menu: ",
+		reply_markup=active_positions_keyboard(channel_id))
 
 
-def closeactive_orders_menu(bot, update):
-	query = update.callback_query
-
-	order_id = query['data']
-	closeactive_orders(order_id)
-
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text="Choose the option in menu:",
-		reply_markup=closeactive_orders_keyboard(order_id))
-
-
-def select_ordersclose_menu(bot, update):
-	query = update.callback_query
-
-	order_id = query['data']
-	ordersclose(order_id)
-
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text="Choose the option in menu:",
-		reply_markup=main_menu_keyboard())
-
-
-def all_ordersclose(bot, update):
-	query = update.callback_query
-
-	all_ordersclose()	
-
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text="Choose the option in menu:",
-		reply_markup=main_menu_keyboard())
+# def closeactive_orders_menu(bot, update):
+# 	query = update.callback_query
+#
+# 	order_id = query['data']
+# 	closeactive_orders(order_id)
+#
+# 	bot.edit_message_text(chat_id=query.message.chat_id,
+# 		message_id=query.message.message_id,
+# 		text="Choose the option in menu:",
+# 		reply_markup=closeactive_orders_keyboard(order_id))
+#
+#
+# def select_ordersclose_menu(bot, update):
+# 	query = update.callback_query
+#
+# 	order_id = query['data']
+# 	ordersclose(order_id)
+#
+# 	bot.edit_message_text(chat_id=query.message.chat_id,
+# 		message_id=query.message.message_id,
+# 		text="Choose the option in menu:",
+# 		reply_markup=main_menu_keyboard())
+#
+#
+# def all_ordersclose(bot, update):
+# 	query = update.callback_query
+#
+# 	all_ordersclose()
+#
+# 	bot.edit_message_text(chat_id=query.message.chat_id,
+# 		message_id=query.message.message_id,
+# 		text="Choose the option in menu:",
+# 		reply_markup=main_menu_keyboard())
 
 
 def paste_inchannelid(bot, update):
@@ -933,19 +1005,29 @@ def broadcast_answer(bot, update):
 	m = re.search(r"(.*):(.*)@(.*)", msg['message'])
 
 	if m.group(0) and m.group(1) and m.group(2) and m.group(3):
-		full_api = getbinanceapi(chat_id)['binance_api']
+		exchange = m.group(2)
+		symbol = m.group(1)
+		price = m.group(3)
 
-		# print(full_api)
-		api_key = full_api.split(':')[0].strip()
-		api_secret = full_api.split(':')[1].strip()
-		#binance_create_test_order(api_key, api_secret, symbol='NEOBTC', side='BUY', type='MARKET', quantity=1)
-		#binance_create_order(api_key, api_secret, symbol='NEOBTC', side='BUY', price='0.001931')
-		binance_order_limit_buy(api_key, api_secret, symbol='NEOBTC', side='BUY', price='0.001931', quantity=1)
+		if exchange.upper() == 'BINANCE':
+			full_api = getbinanceapi(chat_id)['binance_api']
+
+			api_key = full_api.split(':')[0].strip()
+			api_secret = full_api.split(':')[1].strip()
+			result = binance_order_limit_buy(api_key, api_secret, symbol=symbol, side='BUY', price=price, quantity=1)
+		elif exchange.upper() == 'BITTREX':
+			full_api = getbittrexapi(chat_id)['bittrex_api']
+
+			api_key = full_api.split(':')[0].strip()
+			api_secret = full_api.split(':')[1].strip()
+			result = bittrex_buy_limit(api_key, api_secret, market=symbol, quantity=1, rate=price)
+			if result['success'] is not True:
+				return
+			insert_order(chat_id, symbol, 'BINANCE', result['result']['uuid'])
 		message = "Bid order has been placed for '"+str(m.group(1)).upper()+"':'"+str(m.group(2)).upper()+"' at '"+str(m.group(3)).upper()+"' BTC"
 		bot.send_message(chat_id=chat_id, text=message)
 
 
-# Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 					level=logging.INFO)
 
@@ -972,10 +1054,10 @@ updater.dispatcher.add_handler(CallbackQueryHandler(settings_submenu2, pattern='
 updater.dispatcher.add_handler(CallbackQueryHandler(settings_submenu3, pattern='^ss3$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(actions_menu, pattern='actions$'))
 
-#viewactive_
-#closeactive_
-updater.dispatcher.add_handler(CallbackQueryHandler(viewactive_positions_menu, pattern='^viewactive_'))
-updater.dispatcher.add_handler(CallbackQueryHandler(closeactive_orders_menu, pattern='^closeactive_'))
+updater.dispatcher.add_handler(CallbackQueryHandler(active_positions_menu, pattern='^active_'))
+updater.dispatcher.add_handler(CallbackQueryHandler(cancelorder, pattern='^cancelorder_'))
+updater.dispatcher.add_handler(CallbackQueryHandler(viewactivepos, pattern='^cancelactionsorders_'))
+updater.dispatcher.add_handler(CallbackQueryHandler(viewactivepos, pattern='^viewactivepos_'))
 
 updater.dispatcher.add_handler(CallbackQueryHandler(action_demoon, pattern='m2_1'))
 updater.dispatcher.add_handler(CallbackQueryHandler(action_demooff, pattern='m2_2'))
@@ -983,14 +1065,8 @@ updater.dispatcher.add_handler(CallbackQueryHandler(action_demooff, pattern='m2_
 updater.dispatcher.add_handler(CallbackQueryHandler(action_autoon, pattern='^ss2_1$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(action_autooff, pattern='^ss2_2$'))
 
-#vs1_1
-#all_ordersclose select_ordersclose
-#all_ordersclose select_ordersclose_menu
-#select_ordersclose_
-#updater.dispatcher.add_handler(CallbackQueryHandler(ordersclose, pattern='^select_ordersclose_'))
-
-updater.dispatcher.add_handler(CallbackQueryHandler(all_ordersclose, pattern='^all_ordersclose$'))
-updater.dispatcher.add_handler(CallbackQueryHandler(select_ordersclose_menu, pattern='^select_ordersclose_'))
+#updater.dispatcher.add_handler(CallbackQueryHandler(all_ordersclose, pattern='^all_ordersclose$'))
+#updater.dispatcher.add_handler(CallbackQueryHandler(select_ordersclose_menu, pattern='^select_ordersclose_'))
 
 updater.dispatcher.add_handler(CallbackQueryHandler(registredchannels_menu, pattern='^vs1_1'))
 
@@ -1000,7 +1076,6 @@ updater.dispatcher.add_handler(CallbackQueryHandler(disable_allchannel, pattern=
 updater.dispatcher.add_handler(CallbackQueryHandler(disable_channel, pattern='^disable_v'))
 updater.dispatcher.add_handler(CallbackQueryHandler(enable_channel, pattern='^enable_'))
 
-#bmy_
 updater.dispatcher.add_handler(CallbackQueryHandler(broadcast_answer, pattern='^bmy_'))
 
 updater.dispatcher.add_handler(CallbackQueryHandler(select_channels_menu, pattern='^as2$'))
@@ -1015,8 +1090,8 @@ updater.dispatcher.add_handler(CallbackQueryHandler(pay_menu, pattern='^pay$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(pay_newchannel, pattern='^pay_1$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(pay_renew, pattern='^pay_2$'))
 
-updater.dispatcher.add_handler(CallbackQueryHandler(bittrex_bal, pattern='vs1_21'))
-updater.dispatcher.add_handler(CallbackQueryHandler(binance_bal, pattern='vs1_22'))
+updater.dispatcher.add_handler(CallbackQueryHandler(bittrex_bal_menu, pattern='vs1_21'))
+updater.dispatcher.add_handler(CallbackQueryHandler(binance_bal_menu, pattern='vs1_22'))
 updater.dispatcher.add_handler(CallbackQueryHandler(both_bal, pattern='vs1_23'))
 #updater.dispatcher.add_handler(CallbackQueryHandler(pay_submenu, pattern='m5_1'))
 

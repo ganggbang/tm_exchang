@@ -25,16 +25,22 @@ def sendbroadcastmessages(bot, chat_id, message, message_id):
 			exchange = str(m.group(2)).upper()
 			price = str(m.group(3)).upper()
 
-			full_api = getbinanceapi(chat_id)['binance_api']
+			if exchange == 'BINANCE':
+				full_api = getbinanceapi(chat_id)['binance_api']
 
-			# print(full_api)
-			api_key = full_api.split(':')[0].strip()
-			api_secret = full_api.split(':')[1].strip()
-			ticket_price = binance_get_symbol_ticker(api_key, api_secret, symbol+'BTC')
+				api_key = full_api.split(':')[0].strip()
+				api_secret = full_api.split(':')[1].strip()
+				ticker_price = binance_get_symbol_ticker(api_key, api_secret, symbol)
+				#insert_order(chat_id, symbol, 'BINANCE')
+			elif exchange == 'BITTREX':
+				full_api = getbittrexapi(chat_id)['bittrex_api']
 
-			#print(symbol_ticket)
+				api_key = full_api.split(':')[0].strip()
+				api_secret = full_api.split(':')[1].strip()
+				ticker_price = bittrex_getticker(api_key, api_secret, market=symbol)['result']['Ask']
+				#insert_order(chat_id, symbol, 'BITTREX')
 
-			msg = "New buy idea for '" + symbol + "' (ticker), trade on '" + exchange + "' (exchange). Current price at '" + ticket_price + "' (satoshi price) BTC"
+			msg = "New buy idea for '" + symbol + "' (ticker), trade on '" + exchange + "' (exchange) for "+str(price)+". Current price at '" + str(ticker_price) + "' (satoshi price) BTC"
 			bot.send_message(chat_id=chat_id, text=msg, reply_markup=broadcastmessage_keyboard(message_id))
 	except Exception as e:
 		print(e)
