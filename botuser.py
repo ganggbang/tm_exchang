@@ -1026,7 +1026,6 @@ def broadcast_answer(bot, update):
 		price = m.group(3)
 
 		if exchange.upper() == 'BINANCE':
-
 			result = binance_order_limit_buy(chat_id, symbol=symbol, side='BUY', price=price, quantity=1)
 			if result['orderId']:
 				insert_order(chat_id, symbol, 'BINANCE', result['orderId'])
@@ -1035,7 +1034,6 @@ def broadcast_answer(bot, update):
 			else:
 				message = result
 		elif exchange.upper() == 'BITTREX':
-
 			result = bittrex_buy_limit(chat_id, market=symbol, quantity=1, rate=price)
 			if result['success'] is not True:
 				message = result
