@@ -759,13 +759,9 @@ def action_autooff(bot, update):
 
 
 def bittrex_bal(user_id):
-	full_api = getbittrexapi(user_id)['bittrex_api']
-
-	api_key = full_api.split(':')[0].strip()
-	api_secret = full_api.split(':')[1].strip()
 
 	text = '**Bittrex** '
-	balances = bittrex_getbalances(api_key, api_secret)
+	balances = bittrex_getbalances(user_id)
 	for balance in balances['result']:
 		if balance['Balance'] > 0:
 			text += balance['Currency'] + ': ' + str(balance['Balance']) + ' Available: ' + str(
@@ -791,11 +787,7 @@ def bittrex_bal_menu(bot, update):
 
 
 def binance_bal(user_id):
-	full_api = getbinanceapi(user_id)['binance_api']
-
-	api_key = full_api.split(':')[0].strip()
-	api_secret = full_api.split(':')[1].strip()
-	balances = binance_getbalances(api_key, api_secret)
+	balances = binance_getbalances(user_id)
 
 	text = '**Binance** '
 	for balance in balances['balances']:
@@ -874,16 +866,10 @@ def disable_channel(bot, update):
 
 def cancelorder(chat_id, order):
 	if order['exchange'].upper() == 'BITTREX':
-		full_api = getbittrexapi(chat_id)['bittrex_api']
-		api_key = full_api.split(':')[0].strip()
-		api_secret = full_api.split(':')[1].strip()
-		result = bittrex_cancel(api_key, api_secret, uuid=order['orderId'])
+		result = bittrex_cancel(chat_id, uuid=order['orderId'])
 		#if result['success'] is True:
 	elif order['exchange'].upper() == 'BINANCE':
-		full_api = getbinanceapi(chat_id)['binance_api']
-		api_key = full_api.split(':')[0].strip()
-		api_secret = full_api.split(':')[1].strip()
-		result = binancecancel_order(api_key, api_secret, symbol=order['ticker'], orderId=order['orderId'])
+		result = binancecancel_order(chat_id, symbol=order['ticker'], orderId=order['orderId'])
 	del_order(order['orderId'])
 
 	result['status'] = 'Canceled'
@@ -895,16 +881,10 @@ def cancelorder_menu(bot, update):
 	query_data = query['data'].replace('cancelorder_', '')
 	chat_id = query.message.chat_id
 
-	# full_api = getbinanceapi(chat_id)['binance_api']
-	# api_key = full_api.split(':')[0].strip()
-	# api_secret = full_api.split(':')[1].strip()
-	# r = binance_get_all_orders(api_key, api_secret, symbol = 'NEOBTC')
 
-	# full_api = getbittrexapi(chat_id)['bittrex_api']
-	# api_key = full_api.split(':')[0].strip()
-	# api_secret = full_api.split(':')[1].strip()
-	#
-	# bittrex_orders = bittrex_get_open_orders(api_key, api_secret, market='btc-neo')
+	# r = binance_get_all_orders(chat_id, symbol = 'NEOBTC')
+
+	# bittrex_orders = bittrex_get_open_orders(chat_id, market='btc-neo')
 
 	s = query_data.split('_')
 	channel_id = s[0]
@@ -931,21 +911,14 @@ def orders_keyboard(chat_id, channel_id):
 	keyboard = []
 	for order in orders:
 		if order['exchange'].upper() == 'BINANCE':
-			full_api = getbinanceapi(chat_id)['binance_api']
-			api_key = full_api.split(':')[0].strip()
-			api_secret = full_api.split(':')[1].strip()
-			binance_orders = binance_get_open_orders(api_key, api_secret, symbol=order['ticker'])
+			binance_orders = binance_get_open_orders(chat_id, symbol=order['ticker'])
 
 			for bin_order in binance_orders:
 				keyboard.append([InlineKeyboardButton(order['ticker'] + ":BINACE, Bid, Bid Price: $X, Current Price: $X, Current return: X%, Time Active: X day, XX hours, XX minutes",
 													  callback_data='cancelorder_' + str(channel_id) + '_' + str(bin_order['orderId']))])
 
 		if order['exchange'].upper() == 'BITTREX':
-			full_api = getbittrexapi(chat_id)['bittrex_api']
-			api_key = full_api.split(':')[0].strip()
-			api_secret = full_api.split(':')[1].strip()
-
-			bittrex_orders = bittrex_get_open_orders(api_key, api_secret, market=order['ticker'])
+			bittrex_orders = bittrex_get_open_orders(chat_id, market=order['ticker'])
 
 			if bittrex_orders['success'] is True:
 				for bit_order in bittrex_orders['result']:
@@ -984,20 +957,14 @@ def offlinebr_menu(bot, update):
 	query = update.callback_query
 	chat_id = query.message.chat_id
 
-	# full_api = getbittrexapi(chat_id)['bittrex_api']
-	# api_key = full_api.split(':')[0].strip()
-	# api_secret = full_api.split(':')[1].strip()
-	#
-	# r = bittrex_get_order_history(api_key, api_secret, market='BTC-NEO')
+	# r = bittrex_get_order_history(chat_id, market='BTC-NEO')
 	#result = bittrex_cancel(api_key, api_secret, uuid=order['orderId'])
 
 	#if result['success'] is True:
 	# elif order['exchange'].upper() == 'BINANCE':
-	full_api = getbinanceapi(chat_id)['binance_api']
-	api_key = full_api.split(':')[0].strip()
-	api_secret = full_api.split(':')[1].strip()
-	#result = binance_get_my_trades(api_key, api_secret, symbol='NEOBTC')
-	r = binance_get_all_orders(api_key, api_secret, symbol='NEOBTC')
+
+	#result = binance_get_my_trades(chat_id, symbol='NEOBTC')
+	r = binance_get_all_orders(chat_id, symbol='NEOBTC')
 	#
 
 # def closeactive_orders_menu(bot, update):
@@ -1059,12 +1026,8 @@ def broadcast_answer(bot, update):
 		price = m.group(3)
 
 		if exchange.upper() == 'BINANCE':
-			full_api = getbinanceapi(chat_id)['binance_api']
 
-			api_key = full_api.split(':')[0].strip()
-			api_secret = full_api.split(':')[1].strip()
-
-			result = binance_order_limit_buy(api_key, api_secret, symbol=symbol, side='BUY', price=price, quantity=1)
+			result = binance_order_limit_buy(chat_id, symbol=symbol, side='BUY', price=price, quantity=1)
 			if result['orderId']:
 				insert_order(chat_id, symbol, 'BINANCE', result['orderId'])
 				message = "Bid order has been placed for '" + str(m.group(1)).upper() + "':'" + str(
@@ -1072,11 +1035,8 @@ def broadcast_answer(bot, update):
 			else:
 				message = result
 		elif exchange.upper() == 'BITTREX':
-			full_api = getbittrexapi(chat_id)['bittrex_api']
 
-			api_key = full_api.split(':')[0].strip()
-			api_secret = full_api.split(':')[1].strip()
-			result = bittrex_buy_limit(api_key, api_secret, market=symbol, quantity=1, rate=price)
+			result = bittrex_buy_limit(chat_id, market=symbol, quantity=1, rate=price)
 			if result['success'] is not True:
 				message = result
 			else:

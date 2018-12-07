@@ -1,7 +1,10 @@
 from bittrex.bittrex import Bittrex, API_V2_0, API_V1_1
+from user import getbittrexapi
 
-
-def bittrex_getbalances(api_key, api_secret):
+def bittrex_getbalances(chat_id):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
 	try:
 		r = client.get_balances()
@@ -11,7 +14,10 @@ def bittrex_getbalances(api_key, api_secret):
 		print(e)
 
 
-def bittrex_getbalance(api_key, api_secret, cur):
+def bittrex_getbalance(chat_id, cur):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
 	try:
 		r = client.get_balance(cur)
@@ -21,7 +27,10 @@ def bittrex_getbalance(api_key, api_secret, cur):
 		print(e)
 
 
-def bittrex_getticker(api_key, api_secret, **params):
+def bittrex_getticker(chat_id, **params):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
 	try:
 		r = client.get_ticker(**params)
@@ -31,7 +40,10 @@ def bittrex_getticker(api_key, api_secret, **params):
 		print(e)
 
 
-def bittrex_buy_limit(api_key, api_secret, **params):
+def bittrex_buy_limit(chat_id, **params):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
 
 	try:
@@ -42,7 +54,10 @@ def bittrex_buy_limit(api_key, api_secret, **params):
 		print(e)
 
 
-def bittrex_sell_limit(api_key, api_secret, **params):
+def bittrex_sell_limit(chat_id, **params):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
 
 	try:
@@ -52,7 +67,10 @@ def bittrex_sell_limit(api_key, api_secret, **params):
 	except Exception as e:
 		print(e)
 
-def bittrex_get_order_history(api_key, api_secret, **params):
+def bittrex_get_order_history(chat_id, **params):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
 
 	try:
@@ -62,7 +80,10 @@ def bittrex_get_order_history(api_key, api_secret, **params):
 	except Exception as e:
 		print(e)
 
-def bittrex_get_open_orders(api_key, api_secret, **params):
+def bittrex_get_open_orders(chat_id, **params):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
 
 	try:
@@ -73,7 +94,10 @@ def bittrex_get_open_orders(api_key, api_secret, **params):
 		print(e)
 
 
-def bittrex_cancel(api_key, api_secret, **params):
+def bittrex_cancel(chat_id, **params):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
 
 	try:
@@ -84,7 +108,10 @@ def bittrex_cancel(api_key, api_secret, **params):
 		print(e)
 
 
-def bittrex_get_order(api_key, api_secret, **params):
+def bittrex_get_order(chat_id, **params):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
 
 	try:
