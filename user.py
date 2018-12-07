@@ -3,10 +3,32 @@ import re
 import json
 from connection import create_connection, save
 
+def del_order(orderId):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	sql = "DELETE FROM `orders` WHERE `orderId` = '"+str(orderId)+"'"
+	cursor.execute(sql)
+	cursor = connection.cursor()
+	connection.commit()
+	cursor.close()
+	connection.close()
+
+
+def get_order(orderId):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `ticker`,`exchange`, `last_active`, `orderId` FROM `orders` WHERE `orderId` = '"+str(orderId)+"'")
+
+	order = cursor.fetchone()
+
+	connection.close()
+	return order
+
+
 def get_orders(user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `ticker`,`exchange`, `last_active` FROM `orders` WHERE `tm_id` = "+str(user_id))
+	cursor.execute("SELECT `ticker`,`exchange`, `last_active`, `orderId` FROM `orders` WHERE `tm_id` = "+str(user_id))
 
 	tickers = []
 	for t in cursor.fetchall():

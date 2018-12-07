@@ -52,6 +52,15 @@ def bittrex_sell_limit(api_key, api_secret, **params):
 	except Exception as e:
 		print(e)
 
+def bittrex_get_order_history(api_key, api_secret, **params):
+	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
+
+	try:
+		result = client.get_order_history(**params)
+		print(result)
+		return result
+	except Exception as e:
+		print(e)
 
 def bittrex_get_open_orders(api_key, api_secret, **params):
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)

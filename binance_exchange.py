@@ -62,6 +62,14 @@ def binance_cancel_order(api_key, api_secret, **params):
 	except Exception as e:
 		print(e)
 
+def binance_get_my_trades(api_key, api_secret, **params):
+	client = Client(api_key, api_secret)
+	try:
+		js_info = client.cancel_order(**params)
+		print(js_info)
+		return js_info
+	except Exception as e:
+		print(e)
 
 def binancecancel_order(api_key, api_secret, **params):
 	client = Client(api_key, api_secret)
@@ -116,6 +124,7 @@ def binance_get_symbol_ticker(api_key, api_secret, symbol):
 	except Exception as e:
 		print (e)
 	return None
+
 
 def binance_timesync(client):
 	gt = client.get_server_time()
@@ -179,7 +188,7 @@ def binance_order_limit_buy(api_key, api_secret, **params):
 		js_info = client.order_limit_buy(**params)
 		return js_info
 	except Exception as e:
-		print(e)
+		return str(e)
 
 
 def binance_create_order(api_key, api_secret, **params):
@@ -190,5 +199,5 @@ def binance_create_order(api_key, api_secret, **params):
 		return js_info
 	except Exception as e:
 		print(e)
-	return None
+		return str(e)
 
