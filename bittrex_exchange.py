@@ -27,6 +27,20 @@ def bittrex_getbalance(chat_id, cur):
 		print(e)
 
 
+def bittrex_get_orderbook(chat_id, **params):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
+	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
+
+	try:
+		r = client.get_orderbook(**params)
+		print(r)
+		return r
+	except Exception as e:
+		print(e)
+
+
 def bittrex_getticker(chat_id, **params):
 	full_api = getbittrexapi(chat_id)['bittrex_api']
 	api_key = full_api.split(':')[0].strip()

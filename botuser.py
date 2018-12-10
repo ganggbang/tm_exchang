@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 from user import *
+import datetime
+from dateutil import relativedelta
+from dateutil import parser
 import logging
 from binance_exchange import *
 from bittrex_exchange import *
@@ -316,13 +319,6 @@ def about_menu_keyboard():
 def active_positions_keyboard(channel_id):
 	keyboard = [[InlineKeyboardButton('View Active Positions', callback_data='viewactivepos_'+str(channel_id))],
 				[InlineKeyboardButton('Cancel Active Orders', callback_data='cancelactionsorders_'+str(channel_id))],
-		[InlineKeyboardButton('Actions', callback_data='actions')],]
-	return InlineKeyboardMarkup(keyboard)
-
-
-def closeactive_orders_keyboard(order_id):
-	keyboard = [[InlineKeyboardButton('All Orders', callback_data='all_ordersclose')],
-		[InlineKeyboardButton('Select Orders', callback_data='select_ordersclose_'+str(order_id))],
 		[InlineKeyboardButton('Actions', callback_data='actions')],]
 	return InlineKeyboardMarkup(keyboard)
 
@@ -802,7 +798,6 @@ def binance_bal_menu(bot, update):
 	query = update.callback_query
 
 	try:
-
 		text = binance_bal(query.message.chat_id)
 		bot.edit_message_text(chat_id=query.message.chat_id,
 			message_id=query.message.message_id,
@@ -870,7 +865,8 @@ def cancelorder(chat_id, order):
 		#if result['success'] is True:
 	elif order['exchange'].upper() == 'BINANCE':
 		result = binancecancel_order(chat_id, symbol=order['ticker'], orderId=order['orderId'])
-	del_order(order['orderId'])
+	#del_order(order['orderId'])
+	cancel_order(order['orderId'])
 
 	result['status'] = 'Canceled'
 	return result
@@ -881,9 +877,7 @@ def cancelorder_menu(bot, update):
 	query_data = query['data'].replace('cancelorder_', '')
 	chat_id = query.message.chat_id
 
-
 	# r = binance_get_all_orders(chat_id, symbol = 'NEOBTC')
-
 	# bittrex_orders = bittrex_get_open_orders(chat_id, market='btc-neo')
 
 	s = query_data.split('_')
@@ -904,6 +898,25 @@ def cancelorder_menu(bot, update):
 		text="Selected orders have been "+result['status']+": ",
 		reply_markup=keyboard)
 
+def get_timeactive(chat_id, szDate, exchange):
+
+	try:
+		if exchange == 'BINANCE':
+			server_time = binance_get_server_time(chat_id)
+			t1 = datetime.datetime.fromtimestamp(szDate/1000)
+			t2 = datetime.datetime.fromtimestamp(int(server_time['serverTime'])/1000)
+		elif exchange == 'BITTREX':
+			t1 = parser.parse(szDate)
+			t2 = datetime.datetime.now()
+
+		difference = relativedelta.relativedelta(t2, t1)
+		days = difference.days
+		hours = difference.hours
+		minutes = difference.minutes
+		return "Time Active: " + str(days) + " day, " + str(hours) + " hours, " + str(minutes) + " minutes : "
+	except Exception as e:
+		print(e)
+
 
 def orders_keyboard(chat_id, channel_id):
 	orders = get_orders(chat_id)
@@ -911,18 +924,25 @@ def orders_keyboard(chat_id, channel_id):
 	keyboard = []
 	for order in orders:
 		if order['exchange'].upper() == 'BINANCE':
-			binance_orders = binance_get_open_orders(chat_id, symbol=order['ticker'])
+			#binance_orders = binance_get_open_orders(chat_id, symbol=order['ticker'])
+			binance_orders = binance_get_all_orders(chat_id, symbol=order['ticker'])
 
 			for bin_order in binance_orders:
-				keyboard.append([InlineKeyboardButton(order['ticker'] + ":BINACE, Bid, Bid Price: $X, Current Price: $X, Current return: X%, Time Active: X day, XX hours, XX minutes",
+				if bin_order['status'] == 'NEW' and bin_order['orderId'] == int(order['orderId']):
+					current_price = binance_get_symbol_ticker(chat_id, order['ticker'])
+					keyboard.append([InlineKeyboardButton(order['ticker'] + ":BINANCE, Bid Price: $"+str(bin_order['price'])+", Current: $"+str(current_price)+", Current return: X%, "+get_timeactive(chat_id, bin_order['time'], "BINANCE"),
 													  callback_data='cancelorder_' + str(channel_id) + '_' + str(bin_order['orderId']))])
 
 		if order['exchange'].upper() == 'BITTREX':
 			bittrex_orders = bittrex_get_open_orders(chat_id, market=order['ticker'])
+			#bittrex_orders = bittrex_get_order_history(chat_id, market=order['ticker'])
+			#bittrex_orders = bittrex_get_orderbook(chat_id, market=order['ticker'])
 
 			if bittrex_orders['success'] is True:
 				for bit_order in bittrex_orders['result']:
-					keyboard.append([InlineKeyboardButton(bit_order['Exchange']+":BITTREX, Bid, Bid Price: $X, Current Price: $X, Current return: X%, Time Active: X day, XX hours, XX minutes", callback_data='cancelorder_'+str(channel_id)+'_'+str(bit_order['OrderUuid']))])
+					if bit_order['OrderUuid'] == order['orderId']:
+						current_price = bittrex_getticker(chat_id, market=order['ticker'])['result']['Ask']
+						keyboard.append([InlineKeyboardButton(bit_order['Exchange']+":BITTREX, Bid Price: $"+str(bit_order['Limit'])+", Current: $"+str(current_price)+", Current return: X%, "+get_timeactive(chat_id, bit_order['Opened'], "BITTREX"), callback_data='cancelorder_'+str(channel_id)+'_'+str(bit_order['OrderUuid']))])
 
 	keyboard.append([InlineKeyboardButton("Cancel ALL Orders", callback_data='cancelorder_'+str(channel_id)+'_all')])
 	keyboard.append([InlineKeyboardButton("Actions Menu", callback_data='actions')])
@@ -967,40 +987,106 @@ def offlinebr_menu(bot, update):
 	r = binance_get_all_orders(chat_id, symbol='NEOBTC')
 	#
 
-# def closeactive_orders_menu(bot, update):
-# 	query = update.callback_query
-#
-# 	order_id = query['data']
-# 	closeactive_orders(order_id)
-#
-# 	bot.edit_message_text(chat_id=query.message.chat_id,
-# 		message_id=query.message.message_id,
-# 		text="Choose the option in menu:",
-# 		reply_markup=closeactive_orders_keyboard(order_id))
-#
-#
-# def select_ordersclose_menu(bot, update):
-# 	query = update.callback_query
-#
-# 	order_id = query['data']
-# 	ordersclose(order_id)
-#
-# 	bot.edit_message_text(chat_id=query.message.chat_id,
-# 		message_id=query.message.message_id,
-# 		text="Choose the option in menu:",
-# 		reply_markup=main_menu_keyboard())
-#
-#
-# def all_ordersclose(bot, update):
-# 	query = update.callback_query
-#
-# 	all_ordersclose()
-#
-# 	bot.edit_message_text(chat_id=query.message.chat_id,
-# 		message_id=query.message.message_id,
-# 		text="Choose the option in menu:",
-# 		reply_markup=main_menu_keyboard())
 
+def closeactive_orders_keyboard(order_id):
+	keyboard = [[InlineKeyboardButton('All Orders', callback_data='all_ordersclose')],
+		[InlineKeyboardButton('Select Orders', callback_data='select_ordersclose_'+str(order_id))],
+		[InlineKeyboardButton('Actions', callback_data='actions')],]
+	return InlineKeyboardMarkup(keyboard)
+
+
+def closeactive_orders_menu(bot, update):
+	query = update.callback_query
+	chat_id = query.message.chat_id
+	channel_id = query['data'].replace('closeactive_','')
+
+	orders = get_orders_by_filled(channel_id, chat_id)
+
+	keyboard = []
+
+	for order in orders:
+		if order['exchange'].upper() == 'BITTREX':
+			bittrex_orders = bittrex_get_order_history(chat_id, market='btc-neo'.upper())
+			for bit_order in bittrex_orders['result']:
+				if bit_order['Closed'] is not False and bit_order['OrderUuid'] == order['orderId']:
+					current_price = bittrex_getticker(chat_id, market=order['ticker'])['result']['Ask']
+					keyboard.append([InlineKeyboardButton(order['ticker'] + ":BITTREX, Bid Price: $" + str(
+						bit_order['Price']) + ", Current: $" + str(
+						current_price) + ", Current return: X%, " + get_timeactive(chat_id, bit_order['Closed'], "BITTREX"),
+							callback_data='closeorder_' + str(channel_id) + '_' + str(bit_order['OrderUuid']))])
+
+		elif order['exchange'].upper() == 'BINANCE':
+			binance_orders = binance_get_all_orders(chat_id, symbol='NEOBTC')
+			for bin_order in binance_orders:
+				if bin_order['status'] == 'FILLED' and int(order['orderId']) == bin_order['orderId']:
+					current_price = binance_get_symbol_ticker(chat_id, order['ticker'])
+					keyboard.append([InlineKeyboardButton(order['ticker'] + ":BINANCE, Bid Price: $" + str(
+						bin_order['price']) + ", Current: $" + str(
+						current_price) + ", Current return: X%, " + get_timeactive(chat_id, bin_order['time'], "BINANCE"),
+							callback_data='closeorder_' + str(channel_id) + '_' + str(bin_order['orderId']))])
+
+	keyboard.append([InlineKeyboardButton("Close Winners", callback_data='closeorder_' + str(channel_id) + '_winners')])
+	keyboard.append([InlineKeyboardButton("Close Losses", callback_data='closeorder_' + str(channel_id) + '_losses')])
+	keyboard.append([InlineKeyboardButton("Close ALL Orders", callback_data='closeorder_' + str(channel_id) + '_all')])
+	keyboard.append([InlineKeyboardButton("Actions Menu", callback_data='actions')])
+	#closeactive_orders(order_id)
+
+	bot.edit_message_text(chat_id=chat_id,
+		message_id=query.message.message_id,
+		text="Choose the option in menu:",
+		reply_markup=InlineKeyboardMarkup(keyboard))
+
+def orderclose(chat_id, order):
+	if order['exchange'].upper() == 'BITTREX':
+		current_price = bittrex_getticker(chat_id, market=order['ticker'])['result']['Ask']
+		r = bittrex_sell_limit(chat_id, quantity=order['quantity'], market=order['ticker'], rate=current_price);
+		if r['success'] is True:
+			sell_order(order['orderId'])
+	elif order['exchange'].upper() == 'BINANCE':
+		current_price = binance_get_symbol_ticker(chat_id, symbol=order['ticker'])
+		assets = binance_getbalances(chat_id)
+
+		for asset in assets['balances']:
+			if asset['asset'] == order['ticker'].replace('BTC', ''):  # TODO fixme!
+				bal = asset['free']
+				# trades = binance_get_recent_trades(chat_id, symbol=order['ticker'])
+				# quantity = (float(bal))/(float(trades[0]['price'])) * 0.9995
+				diff = float(order['quantity']) - float(bal)
+				q = round(float(order['quantity']) - diff, 6)
+				r = binance_order_limit_sell(chat_id, symbol=order['ticker'], quantity=q, price=current_price)
+				if r['status'] == 'FILLED':
+					sell_order(order['orderId'])
+
+
+def select_ordersclose_menu(bot, update):
+	query = update.callback_query
+	chat_id = query.message.chat_id
+	query_data = query['data'].replace('closeorder_', '')
+
+	s = query_data.split('_')
+	channel_id = s[0]
+	orderId = s[1]
+
+	if orderId.upper() == 'ALL':
+		orders = get_orders_by_filled(channel_id, chat_id)
+		for order in orders:
+			orderclose(order)
+	elif orderId.upper() == 'WINNERS':#todo fix!
+		orders = get_orders_by_filled(channel_id, chat_id)
+		#for order in orders:
+		#	orderclose(order)
+	elif orderId.upper() == 'LOSSES':#todo fix!
+		orders = get_orders_by_filled(channel_id, chat_id)
+		#for order in orders:
+		#	orderclose(order)
+	else:
+		order = get_order(channel_id, orderId)
+		orderclose(order)
+
+	bot.edit_message_text(chat_id=query.message.chat_id,
+		message_id=query.message.message_id,
+		text="Choose the option in menu:",
+		reply_markup=main_menu_keyboard())
 
 
 def paste_inchannelid(bot, update):
@@ -1026,6 +1112,7 @@ def broadcast_answer(bot, update):
 		price = m.group(3)
 
 		if exchange.upper() == 'BINANCE':
+			pos_size = get_position_size(chat_id)
 			result = binance_order_limit_buy(chat_id, symbol=symbol, side='BUY', price=price, quantity=1)
 			if result['orderId']:
 				insert_order(chat_id, symbol, 'BINANCE', result['orderId'])
@@ -1055,7 +1142,7 @@ Bittrex_API, Binance_API, POS_SIZE, SPREAD, TAKE_PROFIT, STOP_LOSS, TRIGGER, PAS
 
 
 ############################# Handlers #########################################
-updater = Updater(token='692136526:AAGbRDOH2uO35F6Em843eQDVLpiW6MFcLmk', request_kwargs={'proxy_url':'socks5://138.68.6.133:8898'})
+updater = Updater(token='692136526:AAGbRDOH2uO35F6Em843eQDVLpiW6MFcLmk')
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CallbackQueryHandler(main_menu, pattern='main$'))
@@ -1083,8 +1170,8 @@ updater.dispatcher.add_handler(CallbackQueryHandler(action_demooff, pattern='m2_
 updater.dispatcher.add_handler(CallbackQueryHandler(action_autoon, pattern='^ss2_1$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(action_autooff, pattern='^ss2_2$'))
 
-#updater.dispatcher.add_handler(CallbackQueryHandler(all_ordersclose, pattern='^all_ordersclose$'))
-#updater.dispatcher.add_handler(CallbackQueryHandler(select_ordersclose_menu, pattern='^select_ordersclose_'))
+updater.dispatcher.add_handler(CallbackQueryHandler(closeactive_orders_menu, pattern='^closeactive_'))
+updater.dispatcher.add_handler(CallbackQueryHandler(select_ordersclose_menu, pattern='^closeorder_'))
 
 updater.dispatcher.add_handler(CallbackQueryHandler(registredchannels_menu, pattern='^vs1_1'))
 updater.dispatcher.add_handler(CallbackQueryHandler(actionchannels_menu, pattern='^as2_1'))

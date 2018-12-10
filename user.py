@@ -3,6 +3,7 @@ import re
 import json
 from connection import create_connection, save
 
+
 def del_order(orderId):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -14,32 +15,64 @@ def del_order(orderId):
 	connection.close()
 
 
-def get_order(orderId):
+def cancel_order(orderId):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `ticker`,`exchange`, `last_active`, `orderId` FROM `orders` WHERE `orderId` = '"+str(orderId)+"'")
+	sql = "UPDATE `orders` SET `isCanceled`=1,`last_active`=NOW() WHERE `orderId` = '"+str(orderId)+"'"
+	cursor.execute(sql)
+	cursor = connection.cursor()
+	connection.commit()
+	cursor.close()
+	connection.close()
 
+
+def get_order(channel_id, orderId):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `ticker`,`exchange`, `last_active`, `orderId`, `quantity` FROM `orders` WHERE `channel_id` ="+str(channel_id)+" AND `orderId` = '"+str(orderId)+"'")
 	order = cursor.fetchone()
-
 	connection.close()
 	return order
 
-
-def get_orders(user_id):
+def get_orders_by_filled(channel_id, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `ticker`,`exchange`, `last_active`, `orderId` FROM `orders` WHERE `tm_id` = "+str(user_id))
+	cursor.execute("SELECT `ticker`,`exchange`, `last_active`, `orderId`, `quantity` FROM `orders` WHERE `channel_id` ="+str(channel_id)+" AND `tm_id` = "+str(user_id)+" AND `isFilled` = 1")
 
-	tickers = []
+	orders = []
 	for t in cursor.fetchall():
-		tickers.append(t)
+		orders.append(t)
 	connection.close()
-	return tickers
+	return orders
 
-def insert_order(user_id, ticker, exchange, orderId):
+
+def get_orders(channel_id, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "INSERT INTO `orders`(`tm_id`, `ticker`, `exchange`, `orderId`,`last_active`) VALUES ("+str(user_id)+", '"+ticker+"', '"+exchange+"', '"+str(orderId)+"', NOW())"
+	cursor.execute("SELECT `ticker`,`exchange`, `last_active`, `orderId`, `quantity` FROM `orders` WHERE `channel_id` ="+str(channel_id)+" AND `tm_id` = "+str(user_id)+" AND `isCanceled` = 0 AND `isFilled` = 0")
+
+	orders = []
+	for t in cursor.fetchall():
+		orders.append(t)
+	connection.close()
+	return orders
+
+
+def insert_order(channel_id, user_id, ticker, exchange, orderId, quantity):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	sql = "INSERT INTO `orders`(`tm_id`, `channel_id`, `ticker`, `exchange`, `orderId`, `last_active`, `quantity`) VALUES ("+str(user_id)+", "+str(channel_id)+", '"+ticker+"', '"+exchange+"', '"+str(orderId)+"', "+str(quantity)+", NOW())"
+	cursor.execute(sql)
+	cursor = connection.cursor()
+	connection.commit()
+	cursor.close()
+	connection.close()
+
+
+def sell_order(orderId):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	sql = "UPDATE `orders` SET `isSell`=1, `isFilled`=0, `last_active`=NOW() WHERE `orderId` = '"+str(orderId)+"'"
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
@@ -123,7 +156,7 @@ def enable_channelsql(channel_id, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
 	sql = "UPDATE `using_channels` SET `is_enable`= 1 WHERE `channel_id` = "+str(channel_id)+" AND `user_id` = "+str(user_id)
-	print(sql)	
+	print(sql)
 	cursor = connection.cursor()
 	cursor.execute(sql)
 	connection.commit()
@@ -135,7 +168,7 @@ def getusingchannels(channels, user_id):
 
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	
+
 	if szchannels:
 		sql = "SELECT `channel_name`, `channel_id`, `id`, `is_enable` FROM `using_channels` WHERE `channel_id` IN ("+szchannels+") AND `user_id` = "+str(user_id)+" AND `is_enable` = 1"
 		#sql = "SELECT `channel_name`, `id`, `is_enable` FROM `channels` WHERE `id` IN ("+szchannels+")"
@@ -219,7 +252,7 @@ def AutomationOn(user_id):
 	connection.commit()
 	cursor.close()
 	connection.close()
-	
+
 def AutomationOff(user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -239,7 +272,7 @@ def DemoOn(user_id):
 	connection.commit()
 	cursor.close()
 	connection.close()
-	
+
 def DemoOff(user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -253,7 +286,7 @@ def DemoOff(user_id):
 def setBittrexAPI(api, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "UPDATE `users` SET `bittrex_api`= '"+api.trim()+"' WHERE `tm_id` = "+str(user_id)
+	sql = "UPDATE `users` SET `bittrex_api`= '"+api.strip()+"' WHERE `tm_id` = "+str(user_id)
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
@@ -270,15 +303,38 @@ def setBinanceAPI(api, user_id):
 	cursor.close()
 	connection.close()
 
-def setPositionSize(position, user_id):
+
+def setPositionPerSize(position, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "REPLACE INTO `risk_settings` (`user_id`, `pos_size`) VALUES ("+str(user_id)+", "+str(position)+")"
+	sql = "REPLACE INTO `risk_settings` (`user_id`, `pos_size_per`) VALUES ("+str(user_id)+", "+str(position)+")"
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
 	cursor.close()
 	connection.close()
+
+
+def get_position_size(user_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `pos_size_amount`,`pos_size_per` FROM `risk_settings` WHERE `user_id` = "+str(user_id))
+	data = cursor.fetchone()
+	connection.close()
+
+	return data
+
+
+def setPositionAmountSize(position, user_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	sql = "REPLACE INTO `risk_settings` (`user_id`, `pos_size_amount`) VALUES ("+str(user_id)+", "+str(position)+")"
+	cursor.execute(sql)
+	cursor = connection.cursor()
+	connection.commit()
+	cursor.close()
+	connection.close()
+
 
 def setSpreadPercent(spreat, user_id):
 	connection = create_connection()
@@ -291,38 +347,71 @@ def setSpreadPercent(spreat, user_id):
 	cursor.close()
 	connection.close()
 
+
+def getSpreadPercent(user_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `spread_per` FROM `risk_settings` WHERE `user_id` = "+str(user_id))
+	data = cursor.fetchone()
+	connection.close()
+
+	return data
+
+
 def setTakeProfit(profit, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
 	sql = "REPLACE INTO `risk_settings` (`user_id`, `take_profit`) VALUES ("+str(user_id)+", "+str(profit)+")"
-	#print(sql)	
+	#print(sql)
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
 	cursor.close()
 	connection.close()
+
+
+def getTakeProfit(user_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `take_profit` FROM `risk_settings` WHERE `user_id` = "+str(user_id))
+	data = cursor.fetchone()
+	connection.close()
+
+	return data
+
 
 def setStopLoss(stoploss, user_id):
-	connection = create_connection()	
+	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
 	sql = "REPLACE INTO `risk_settings` (`user_id`, `stop_loss`) VALUES ("+str(user_id)+", "+str(stoploss)+")"
-	#print(sql)	
+	#print(sql)
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
 	cursor.close()
 	connection.close()
 
+
+def getStopLoss(user_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `stop_loss` FROM `risk_settings` WHERE `user_id` = "+str(user_id))
+	data = cursor.fetchone()
+	connection.close()
+
+	return data
+
+
 def setTrigger(trigger, user_id):
-	connection = create_connection()	
+	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
 	sql = "REPLACE INTO `trigger_hid` (`user_id`, `trigger_hid`) VALUES ("+str(trigger)+", "+str(user_id)+")"
-	#print(sql)	
+	#print(sql)
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
 	cursor.close()
-	connection.close()	
+	connection.close()
 
 def getbinanceapi(user_id):
 	connection = create_connection()
