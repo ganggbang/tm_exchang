@@ -38,6 +38,26 @@ def sendbroadcastmessages(bot, chat_id, message, message_id):
 		print(e)
 
 
+users = get_users()
+for user in users:
+	take_profit = get_take_profit(user['tm_id'])
+	orders = get_orders_by_filled(0, user['tm_id'])
+
+	for order in orders:
+		if order['exchange'].upper() == 'BITTREX':
+			bit_order = bittrex_get_order(user['tm_id'], uuid=order['orderId'])
+			current_price = bittrex_getticker(user['tm_id'], market=order['ticker'])['result']['Ask']
+			p = get_howpercentage(current_price, bit_order['result']['Price'])
+			if p >= 100 + take_profit:
+				bittrex_sell_limit(user['tm_id'], quantity=order['quantity'], market=order['ticker'], rate=current_price)
+		elif order['exchange'].upper() == 'BINANCE':
+			bin_order = binance_get_order(user['tm_id'], symbol=order['ticker'], orderId=order['orderId'])
+			current_price = binance_get_symbol_ticker(user['tm_id'], symbol=order['ticker'])
+			p = get_howpercentage(current_price, bin_order['price'])
+			if p >= 100 + take_profit:
+				r = binance_order_limit_sell(user['tm_id'], symbol=order['ticker'], quantity=order['quantity'], price=current_price)
+
+#for user in users:
 messages = getbroadcastmessages()
 
 for msg in messages:

@@ -3,6 +3,14 @@ import re
 import json
 from connection import create_connection, save
 
+def is_settings(chat_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `user_id` FROM `risk_settings` WHERE `user_id` = "+str(chat_id))
+	settings = cursor.fetchone()
+	connection.close()
+	return settings
+
 
 def del_order(orderId):
 	connection = create_connection()
@@ -34,10 +42,17 @@ def get_order(channel_id, orderId):
 	connection.close()
 	return order
 
+
 def get_orders_by_filled(channel_id, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `ticker`,`exchange`, `last_active`, `orderId`, `quantity` FROM `orders` WHERE `channel_id` ="+str(channel_id)+" AND `tm_id` = "+str(user_id)+" AND `isFilled` = 1")
+
+	if channel_id == 0:
+		sql = "SELECT `ticker`,`exchange`, `last_active`, `orderId`, `quantity` FROM `orders` WHERE `tm_id` = "+str(user_id)+" AND `isFilled` = 1"
+	else:
+		sql = "SELECT `ticker`,`exchange`, `last_active`, `orderId`, `quantity` FROM `orders` WHERE `channel_id` =" + str(channel_id) + " AND `tm_id` = " + str(user_id) + " AND `isFilled` = 1"
+
+	cursor.execute(sql)
 
 	orders = []
 	for t in cursor.fetchall():
@@ -206,6 +221,7 @@ def getchannels():
 
 	return channels
 
+
 def checkuser(update):
 	user_id = update['message']['chat']['id']
 	user = {
@@ -220,6 +236,7 @@ def checkuser(update):
 		save(connection, 'users', user)
 		connection.close()
 
+
 def existing_user(user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -230,6 +247,20 @@ def existing_user(user_id):
 	if user_id:
 		return True
 	return False
+
+
+def get_users():
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `tm_id`,`bittrex_api`,`binance_api` FROM `users` WHERE `is_enable` = 1 AND `bittrex_api` is NOT NULL AND `binance_balance` is NOT NULL")
+
+	users = []
+	for u in cursor.fetchall():
+		users.append(u)
+	connection.close()
+
+	return users
+
 
 def isDemo(user_id):
 	connection = create_connection()
@@ -242,6 +273,7 @@ def isDemo(user_id):
 	if user_id:
 		return True
 	return False
+
 
 def AutomationOn(user_id):
 	connection = create_connection()
@@ -304,7 +336,7 @@ def setBinanceAPI(api, user_id):
 	connection.close()
 
 
-def setPositionPerSize(position, user_id):
+def set_position_size_per(position, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
 	sql = "REPLACE INTO `risk_settings` (`user_id`, `pos_size_per`) VALUES ("+str(user_id)+", "+str(position)+")"
@@ -336,10 +368,10 @@ def setPositionAmountSize(position, user_id):
 	connection.close()
 
 
-def setSpreadPercent(spreat, user_id):
+def set_spread_percent(spread, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "REPLACE INTO `risk_settings` (`user_id`, `spread_per`) VALUES ("+str(user_id)+", "+str(spreat)+")"
+	sql = "REPLACE INTO `risk_settings` (`user_id`, `spread_per`) VALUES ("+str(user_id)+", "+str(spread)+")"
 	print(sql)
 	cursor.execute(sql)
 	cursor = connection.cursor()
@@ -348,17 +380,17 @@ def setSpreadPercent(spreat, user_id):
 	connection.close()
 
 
-def getSpreadPercent(user_id):
+def get_spread_percent(user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
 	cursor.execute("SELECT `spread_per` FROM `risk_settings` WHERE `user_id` = "+str(user_id))
 	data = cursor.fetchone()
 	connection.close()
 
-	return data
+	return data['spread_per']
 
 
-def setTakeProfit(profit, user_id):
+def set_take_profit(profit, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
 	sql = "REPLACE INTO `risk_settings` (`user_id`, `take_profit`) VALUES ("+str(user_id)+", "+str(profit)+")"
@@ -370,14 +402,22 @@ def setTakeProfit(profit, user_id):
 	connection.close()
 
 
-def getTakeProfit(user_id):
+def get_howpercentage(part, whole):
+	return 100 * float(part)/float(whole)
+
+
+def get_percentage(percent, whole):
+	return(percent * float(whole)) / 100.0
+
+
+def get_take_profit(user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
 	cursor.execute("SELECT `take_profit` FROM `risk_settings` WHERE `user_id` = "+str(user_id))
 	data = cursor.fetchone()
 	connection.close()
 
-	return data
+	return float(data['take_profit'])
 
 
 def setStopLoss(stoploss, user_id):

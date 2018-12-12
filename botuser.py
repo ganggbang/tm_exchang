@@ -629,7 +629,7 @@ def done(update):
 	return ConversationHandler.END
 
 
-def bittrex_api_choice(update):
+def bittrex_api_choice(bot, update):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -641,7 +641,7 @@ def bittrex_api_choice(update):
 	return ConversationHandler.END
 
 
-def binance_api_choice(update):
+def binance_api_choice(bot, update):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -652,38 +652,38 @@ def binance_api_choice(update):
 	return ConversationHandler.END
 
 
-def pos_size_choice(update):
+def pos_size_choice(bot, update):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
-	setPositionSize(text, user_id)
+	set_position_size_per(text, user_id)
 	update.message.reply_text('Position Size {} saved'.format(text.lower()),
 		reply_markup=main_menu_keyboard())
 
 	return ConversationHandler.END
 
 
-def spread_choice( update):
+def spread_choice(bot, update):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
-	setSpreadPercent(text, user_id)
+	set_spread_percent(text, user_id)
 	update.message.reply_text('Spread Percent {} saved'.format(text.lower()),
 		reply_markup=main_menu_keyboard())
 
 	return ConversationHandler.END
 
 
-def proffit_choice(update):
+def proffit_choice(bot, update):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
-	setTakeProfit(text, user_id)
+	set_take_profit(text, user_id)
 	update.message.reply_text('Take Profit {} saved'.format(text.lower()),
 		reply_markup=main_menu_keyboard())
 
 	return ConversationHandler.END
 
 
-def stoploss_choice(update):
+def stoploss_choice(bot, update):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
 	setStopLoss(text, user_id)
@@ -693,11 +693,10 @@ def stoploss_choice(update):
 	return ConversationHandler.END
 
 
-def pastein_choise(update):
+def pastein_choise(bot, update):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
-
 	pasteinchannels(text, user_id)
 
 	update.message.reply_text('Channel {} successfully registered!'.format(text.lower()),
@@ -706,7 +705,7 @@ def pastein_choise(update):
 	return ConversationHandler.END
 
 
-def trigger_choice(update):
+def trigger_choice(bot, update):
 	text = update.message.text
 
 	user_id = update['message']['chat']['id']
@@ -767,16 +766,17 @@ def bittrex_bal(user_id):
 
 def bittrex_bal_menu(bot, update):
 	query = update.callback_query
+	chat_id = query.message.chat_id
 
 	try:
-		text = bittrex_bal(query.message.chat_id)
+		text = bittrex_bal(chat_id)
 
-		bot.edit_message_text(chat_id=query.message.chat_id,
+		bot.edit_message_text(chat_id=chat_id,
 			message_id=query.message.message_id,
 			text=text,
 			reply_markup=main_menu_keyboard())	
 	except Exception as e:
-		bot.edit_message_text(chat_id=query.message.chat_id,
+		bot.edit_message_text(chat_id=chat_id,
 			message_id=query.message.message_id,
 			text=str(e)+"",
 			reply_markup=main_menu_keyboard())	
@@ -796,16 +796,17 @@ def binance_bal(user_id):
 
 def binance_bal_menu(bot, update):
 	query = update.callback_query
+	chat_id = query.message.chat_id
 
 	try:
-		text = binance_bal(query.message.chat_id)
-		bot.edit_message_text(chat_id=query.message.chat_id,
+		text = binance_bal(chat_id)
+		bot.edit_message_text(chat_id=chat_id,
 			message_id=query.message.message_id,
 			text = text,
 			reply_markup=main_menu_keyboard())
 
 	except Exception as e:
-		bot.edit_message_text(chat_id=query.message.chat_id,
+		bot.edit_message_text(chat_id=chat_id,
 			message_id=query.message.message_id,
 			reply_markup=main_menu_keyboard(),
 			text=str(e)+"")
@@ -919,7 +920,7 @@ def get_timeactive(chat_id, szDate, exchange):
 
 
 def orders_keyboard(chat_id, channel_id):
-	orders = get_orders(chat_id)
+	orders = get_orders(channel_id, chat_id)
 
 	keyboard = []
 	for order in orders:
@@ -1036,6 +1037,7 @@ def closeactive_orders_menu(bot, update):
 		text="Choose the option in menu:",
 		reply_markup=InlineKeyboardMarkup(keyboard))
 
+
 def orderclose(chat_id, order):
 	if order['exchange'].upper() == 'BITTREX':
 		current_price = bittrex_getticker(chat_id, market=order['ticker'])['result']['Ask']
@@ -1051,9 +1053,9 @@ def orderclose(chat_id, order):
 				bal = asset['free']
 				# trades = binance_get_recent_trades(chat_id, symbol=order['ticker'])
 				# quantity = (float(bal))/(float(trades[0]['price'])) * 0.9995
-				diff = float(order['quantity']) - float(bal)
-				q = round(float(order['quantity']) - diff, 6)
-				r = binance_order_limit_sell(chat_id, symbol=order['ticker'], quantity=q, price=current_price)
+				#diff = float(order['quantity']) - float(bal)
+				#q = round(float(order['quantity']) - diff, 6)
+				r = binance_order_limit_sell(chat_id, symbol=order['ticker'], quantity=order['quantity'], price=current_price)
 				if r['status'] == 'FILLED':
 					sell_order(order['orderId'])
 
@@ -1098,11 +1100,23 @@ def paste_inchannelid(bot, update):
 		reply_markup=main_menu_keyboard())
 
 
+def is_per_or_amount(pos_size):
+	if pos_size['pos_size_amount'] is not None and pos_size['pos_size_per'] is None:
+		return float(pos_size['pos_size_amount'])
+	elif pos_size['pos_size_amount'] is None and pos_size['pos_size_per'] is not None:
+		return float(pos_size['pos_size_per'])
+
+
 def broadcast_answer(bot, update):
 	query = update.callback_query
 	message_id = query['data'].replace('bmy_', '')
-	msg = getbroadcastmsgbyid(message_id)
 	chat_id = query.message.chat_id
+
+	msg = getbroadcastmsgbyid(message_id)
+
+	if is_settings(chat_id) is None:
+		settings_submenu3(bot, update)
+		return
 
 	m = re.search(r"(.*):(.*)@(.*)", msg['message'])
 
@@ -1111,19 +1125,33 @@ def broadcast_answer(bot, update):
 		symbol = m.group(1).upper()
 		price = m.group(3)
 
+		pos_size = is_per_or_amount(get_position_size(chat_id))
+		spread_size = get_spread_percent(chat_id)
+
 		if exchange.upper() == 'BINANCE':
-			pos_size = get_position_size(chat_id)
-			result = binance_order_limit_buy(chat_id, symbol=symbol, side='BUY', price=price, quantity=1)
-			if result['orderId']:
+			balance = binance_getbalance(chat_id, 'BTC')['free']
+			q = get_percentage(pos_size, balance)
+			q = q / float(price)
+			p = get_percentage(spread_size, price)
+			price = float(price) + p
+			result = binance_order_limit_buy(chat_id, symbol=symbol, side='BUY', price=price, quantity=q)
+			#if result['orderId']:
+			if isinstance(result, dict):
 				insert_order(chat_id, symbol, 'BINANCE', result['orderId'])
 				message = "Bid order has been placed for '" + str(m.group(1)).upper() + "':'" + str(
 					m.group(2)).upper() + "' at '" + str(m.group(3)).upper() + "' BTC"
 			else:
 				message = result
 		elif exchange.upper() == 'BITTREX':
-			result = bittrex_buy_limit(chat_id, market=symbol, quantity=1, rate=price)
+			balance = bittrex_getbalance(chat_id, 'BTC')['result']['Available']
+			q = get_percentage(pos_size, balance)
+			q = q / float(price)
+			p = get_percentage(spread_size, price)
+			price = float(price) + p
+
+			result = bittrex_buy_limit(chat_id, market=symbol, quantity=q, rate=price)
 			if result['success'] is not True:
-				message = result
+				message = result['message']
 			else:
 				message = "Bid order has been placed for '"+str(m.group(1)).upper()+"':'"+str(m.group(2)).upper()+"' at '"+str(m.group(3)).upper()+"' BTC"
 				insert_order(chat_id, symbol, 'BITTREX', result['result']['uuid'])
@@ -1181,6 +1209,8 @@ updater.dispatcher.add_handler(CallbackQueryHandler(disable_channel, pattern='^d
 updater.dispatcher.add_handler(CallbackQueryHandler(enable_channel, pattern='^enable_'))
 
 updater.dispatcher.add_handler(CallbackQueryHandler(broadcast_answer, pattern='^bmy_'))
+updater.dispatcher.add_handler(CallbackQueryHandler(main_menu, pattern='^bmn_'))
+#bmn_
 
 updater.dispatcher.add_handler(CallbackQueryHandler(offlinebr_menu, pattern='^as1$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(select_channels_menu, pattern='^as2$'))
@@ -1209,8 +1239,8 @@ conv_handler = ConversationHandler(
 				CallbackQueryHandler(apikey_menu, pattern='^ss1_2$')],
 
 	states={
-		Bittrex_API: [MessageHandler(Filters.text,	bittrex_api_choice,	pass_user_data=True),],
-		Binance_API: [MessageHandler(Filters.text,	binance_api_choice,	pass_user_data=True),],		
+		Bittrex_API: [MessageHandler(Filters.text,	bittrex_api_choice),],
+		Binance_API: [MessageHandler(Filters.text,	binance_api_choice),],
 	},
 
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
@@ -1220,7 +1250,7 @@ conv_handler2 = ConversationHandler(
 	entry_points=[CallbackQueryHandler(possize_menu, pattern='^ss3_1$'),],
 
 	states={
-		POS_SIZE: [MessageHandler(Filters.text,	pos_size_choice, pass_user_data=True),],		
+		POS_SIZE: [MessageHandler(Filters.text,	pos_size_choice),],
 	},
 
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
@@ -1230,7 +1260,7 @@ conv_handler3 = ConversationHandler(
 	entry_points=[CallbackQueryHandler(spread_menu, pattern='^ss3_2$'),],
 
 	states={
-		SPREAD: [MessageHandler(Filters.text, spread_choice, pass_user_data=True),],		
+		SPREAD: [MessageHandler(Filters.text, spread_choice),],
 	},
 
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
@@ -1240,7 +1270,7 @@ conv_handler4 = ConversationHandler(
 	entry_points=[CallbackQueryHandler(proffit_menu, pattern='^ss3_3$'),],
 
 	states={
-		TAKE_PROFIT: [MessageHandler(Filters.text, proffit_choice, pass_user_data=True),],		
+		TAKE_PROFIT: [MessageHandler(Filters.text, proffit_choice),],
 	},
 
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
@@ -1250,7 +1280,7 @@ conv_handler5 = ConversationHandler(
 	entry_points=[CallbackQueryHandler(stoploss_menu, pattern='^ss3_4$'),],
 
 	states={
-		STOP_LOSS: [MessageHandler(Filters.text, stoploss_choice, pass_user_data=True),],		
+		STOP_LOSS: [MessageHandler(Filters.text, stoploss_choice),],
 	},
 
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
@@ -1260,7 +1290,7 @@ conv_handler6 = ConversationHandler(
 	entry_points=[CallbackQueryHandler(trigger_menu, pattern='^ss3_5$'),],
 
 	states={
-		TRIGGER: [MessageHandler(Filters.text, trigger_choice, pass_user_data=True),],		
+		TRIGGER: [MessageHandler(Filters.text, trigger_choice),],
 	},
 
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
@@ -1270,7 +1300,7 @@ conv_handler7 = ConversationHandler(
 	entry_points=[CallbackQueryHandler(pastein_menu, pattern='paste_inchannelid'),],
 
 	states={
-		PASTEIN: [MessageHandler(Filters.text, pastein_choise, pass_user_data=True),],		
+		PASTEIN: [MessageHandler(Filters.text, pastein_choise),],
 	},
 
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
