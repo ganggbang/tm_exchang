@@ -109,6 +109,24 @@ def binance_get_my_trades(chat_id, **params):
 	except Exception as e:
 		print(e)
 
+
+def binance_get_all_tickers(chat_id):
+	full_api = getbinanceapi(chat_id)['binance_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
+	client = Client(api_key, api_secret)
+	binance_timesync(client)
+	js_info = []
+	try:
+		js_info = client.get_all_tickers()
+		#print(js_info)
+		return js_info
+	except Exception as e:
+		print(e)
+	return js_info
+
+
+
 def binancecancel_order(chat_id, **params):
 	full_api = getbinanceapi(chat_id)['binance_api']
 	api_key = full_api.split(':')[0].strip()

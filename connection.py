@@ -10,18 +10,20 @@ def create_connection():
 	)
 
 
-def save(connection, table, data):
-	new_data = {}
+def save(table, data):
+	connection = create_connection()
 
-	for key, value in data.items():
-		new_data[key] = str(value)
-
-	print(new_data)
+	# new_data = {}
+	#
+	# for key, value in data.items():
+	# 	new_data[key] = str(value)
+	#
+	# print(new_data)
 
 	sql = "INSERT IGNORE INTO %s SET %s" % (
 		table,
 		", ".join(
-			"`%s`='%s'" % (field, value.replace("None", "").replace("'", "''").replace("\n", " ")) for field, value in new_data.items()))
+			"`%s`='%s'" % (field, value.replace("None", "").replace("'", "''").replace("\n", " ")) for field, value in data.items()))
 	# print(sql)
 	#  return None
 	cursor = connection.cursor()
@@ -29,4 +31,5 @@ def save(connection, table, data):
 	last_id = cursor.lastrowid
 	connection.commit()
 	cursor.close()
+	connection.close()
 	return last_id

@@ -7,9 +7,13 @@ def bittrex_getbalances(chat_id):
 	api_secret = full_api.split(':')[1].strip()
 	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
 	try:
-		r = client.get_balances()
-		print(r)
-		return r
+		rr = client.get_balances()
+		#for r in rr:
+			# channels = {
+			#
+			# }
+		#print(r)
+		return rr
 	except Exception as e:
 		print(e)
 
@@ -35,6 +39,45 @@ def bittrex_get_orderbook(chat_id, **params):
 
 	try:
 		r = client.get_orderbook(**params)
+		print(r)
+		return r
+	except Exception as e:
+		print(e)
+
+
+def bittrex_get_markets(chat_id):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
+	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
+	try:
+		r = client.get_markets()
+		print(r)
+		return r
+	except Exception as e:
+		print(e)
+
+
+def bittrex_list_markets_by_currency(chat_id, cur):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
+	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
+	try:
+		r = client.list_markets_by_currency(cur)
+		print(r)
+		return r
+	except Exception as e:
+		print(e)
+
+
+def bittres_get_currencies(chat_id, **params):
+	full_api = getbittrexapi(chat_id)['bittrex_api']
+	api_key = full_api.split(':')[0].strip()
+	api_secret = full_api.split(':')[1].strip()
+	client = Bittrex(api_key, api_secret, api_version=API_V1_1)
+	try:
+		r = client.get_currencies(**params)
 		print(r)
 		return r
 	except Exception as e:

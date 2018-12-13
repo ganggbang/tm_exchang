@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import pymysql
+import logging
 import re
 from admin import *
 from binance_exchange import *
@@ -47,9 +48,10 @@ def view_submenu1(bot, update):
 
 def select_channels_adminmenu(bot, update):
 	query = update.callback_query
-	channels = getchannels_admin()
+
+	channels = get_binancechannels_admin()
 	keyboard = []
-	i = 1
+
 	for ch in channels:
 		if ch['is_enable'] == 1:
 			keyboard.append([InlineKeyboardButton(ch['channel_name'], callback_data='vs1_21'+str(ch['id']))])
@@ -90,25 +92,27 @@ def post_menu(bot, update):
 		text=post_menu_message(),
 		reply_markup=post_menu_keyboard())
 
-def post_submenu1(bot, update):
-	query = update.callback_query
-	bot.send_message(chat_id=query.message.chat_id,
-		text='Exchange Binance selected, type ticker name paired with BTC, so for BTC-LSK type \'LSK\'')
-	# bot.edit_message_text(chat_id=query.message.chat_id,
-	# 	message_id=query.message.message_id,
-	# 	text=post_submenu1_message(),
-	# 	reply_markup=post_submenu1_keyboard())
-	return POST1
-
-def post_submenu2(bot, update):
-	query = update.callback_query
-	bot.send_message(chat_id=query.message.chat_id,
-		text='Exchange Bittrex selected, type ticker name paired with BTC, so for BTC-LSK type \'LSK\'')
-	# bot.edit_message_text(chat_id=query.message.chat_id,
-	# 	message_id=query.message.message_id,
-	# 	text=post_submenu2_message(),
-	# 	reply_markup=post_submenu2_keyboard())
-	return POST2
+# def post_submenu1(bot, update):
+# 	query = update.callback_query
+# 	text = update.message.text
+# 	bot.send_message(chat_id=query.message.chat_id,
+# 		text='Exchange Binance selected, type ticker name paired with BTC, so for BTC-LSK type \'LSK\'')
+# 	# bot.edit_message_text(chat_id=query.message.chat_id,
+# 	# 	message_id=query.message.message_id,
+# 	# 	text=post_submenu1_message(),
+# 	# 	reply_markup=post_submenu1_keyboard())
+# 	return POST1
+#
+# def post_submenu2(bot, update):
+# 	query = update.callback_query
+# 	text = update.message.text
+# 	bot.send_message(chat_id=query.message.chat_id,
+# 		text='Exchange Bittrex selected, type ticker name paired with BTC, so for BTC-LSK type \'LSK\'')
+# 	# bot.edit_message_text(chat_id=query.message.chat_id,
+# 	# 	message_id=query.message.message_id,
+# 	# 	text=post_submenu2_message(),
+# 	# 	reply_markup=post_submenu2_keyboard())
+# 	return POST2
 
 
 
@@ -154,17 +158,17 @@ def post_menu_keyboard():
 							[InlineKeyboardButton('Main menu', callback_data='main')]]
 	return InlineKeyboardMarkup(keyboard)
 
-def post_submenu1_keyboard():
-	keyboard = [[InlineKeyboardButton('Default Message', callback_data='ps1_1')],
-							[InlineKeyboardButton('Custom Message', callback_data='ps1_2')],
+def post_submenu_keyboard(channel_id):
+	keyboard = [[InlineKeyboardButton('Default Message', callback_data='default_'+str(channel_id))],
+							[InlineKeyboardButton('Custom Message', callback_data='custom_'+str(channel_id))],
 							[InlineKeyboardButton('Post menu', callback_data='post')]]
 	return InlineKeyboardMarkup(keyboard)
 
-def post_submenu2_keyboard():
-	keyboard = [[InlineKeyboardButton('Default Message', callback_data='ps2_1')],
-							[InlineKeyboardButton('Custom Message', callback_data='ps2_2')],
-							[InlineKeyboardButton('Post menu', callback_data='post')]]
-	return InlineKeyboardMarkup(keyboard)
+# def post_submenu2_keyboard():
+# 	keyboard = [[InlineKeyboardButton('Default Message', callback_data='ps2_1')],
+# 							[InlineKeyboardButton('Custom Message', callback_data='ps2_2')],
+# 							[InlineKeyboardButton('Post menu', callback_data='post')]]
+# 	return InlineKeyboardMarkup(keyboard)
 
 def view_broadcast_yn_keyboard(channel_id):
 	keyboard = [[InlineKeyboardButton('Yes', callback_data='vs_by_'+str(channel_id))],
@@ -194,11 +198,11 @@ def view_submenu3_message():
 def post_menu_message():
 	return 'Choose the option in menu:'
 
-def post_submenu1_message():
+def post_submenu_message():
 	return 'Choose the option in menu:'
 
-def post_submenu2_message():
-	return 'Choose the option in menu:'
+# def post_submenu2_message():
+# 	return 'Choose the option in menu:'
 
 def select_channels_message():
 	return 'Choose the channel in menu:'
@@ -240,8 +244,7 @@ def edit_channelname(bot, update, user_data):
 
 	update.message.reply_text('Do you wish to broadcast message to users informing them of your name change?',
 		reply_markup=view_broadcast_yn_keyboard(channel_id))
-	
-	return ConversationHandler.END
+
 
 def send_broadcastmessage(bot, update):
 	query = update.callback_query
@@ -259,48 +262,120 @@ def send_broadcastmessage(bot, update):
 		reply_markup=main_menu_keyboard())	
 
 
+def ticker_binance_choiced(bot, update):
+	query = update.callback_query
+	chat_id = query.message.chat_id
 
-def ticker_binancechoice(bot, update, user_data):
-	text = update.message.text
+	channel_id = query['data'].replace('channel_binance_', '')
 
-	user_id = update.message['chat']['id']
+	bot.edit_message_text(chat_id=chat_id,
+						  message_id=query.message.message_id,
+						  text="Choose the option in menu :",
+						  reply_markup=post_submenu_keyboard(channel_id))
 
-	full_api = getbinanceapi(user_id)['binance_api']
 
-	api_key = full_api.split(':')[0]
-	api_secret = full_api.split(':')[1]
-	ticker = getbinanceticker(api_key, api_secret, text)
-	if ticker:
-		update.message.reply_text('Your {} ticker is valid'.format(text),
-			reply_markup=post_submenu1_keyboard())
-	else:
-		update.message.reply_text('Your {} ticker is not valid'.format(text),
-			reply_markup=post_submenu1_keyboard())
+def ticker_binance_choice(bot, update):
+	query = update.callback_query
+	chat_id = query.message.chat_id
 
-	return ConversationHandler.END
+	channels = get_binancechannels_admin()
+	keyboard = []
 
-def ticker_bittrexchoice(bot, update, user_data):
-	text = update.message.text
+	try:
+		i = 0
+		buttons = []
+		keyboard.append([InlineKeyboardButton("Post Trade", callback_data='post')])
+		for channel in channels:
+			if "BTC" in channel['channel_name']:
+				#print(channel['channel_name'])
+				i = i + 1
+				buttons.append(InlineKeyboardButton(channel['channel_name'], callback_data='channel_binance_'+str(channel['id'])))
+				if i == 5:
+					i = 0
+					keyboard.append(buttons)
+					buttons = []
 
-	user_id = update.message['chat']['id']
-	full_api = getbittrexapi(user_id)['bittrex_api']
+		keyboard.append([InlineKeyboardButton("Post Trade", callback_data='post')])
 
-	api_key = full_api.split(':')[0]
-	api_secret = full_api.split(':')[1]
-	ticker = getbittrexticker(api_key, api_secret, text)
-	if ticker:
-		update.message.reply_text('Your {} ticker is valid'.format(text),
-			reply_markup=post_submenu2_keyboard())
-	else:
-		update.message.reply_text('Your {} ticker is not valid'.format(text),
-			reply_markup=post_submenu2_keyboard())
+		bot.edit_message_text(chat_id=chat_id,
+						  message_id=query.message.message_id,
+						  text="Choose the option in menu                              :",
+						  reply_markup=InlineKeyboardMarkup(keyboard))
+	except Exception as e:
+		print(e)
+	# assets = binance_get_all_tickers(user_id)
+	# for asset in assets:
+	# 	save('channels', data ={
+	# 		'ticker':asset['symbol'],
+	# 		'channel_name':asset['symbol'],
+	# 		'is_bittrex':'0',
+	# 		'is_enable':'1',
+	# 	})
 
-	return ConversationHandler.END
+
+def ticker_bittrex_choiced(bot, update):
+	query = update.callback_query
+	chat_id = query.message.chat_id
+
+	channel_id = query['data'].replace('channel_bittrex_', '')
+
+	bot.edit_message_text(chat_id=chat_id,
+						  message_id=query.message.message_id,
+						  text="Choose the option in menu :",
+						  reply_markup=post_submenu_keyboard(channel_id))
+
+def ticker_bittrex_choice(bot, update):
+	query = update.callback_query
+	chat_id = query.message.chat_id
+
+	channels = get_bittrexchannels_admin()
+	keyboard = []
+
+	try:
+		i = 0
+		buttons = []
+		keyboard.append([InlineKeyboardButton("Post Trade", callback_data='post')])
+		for channel in channels:
+			if "BTC" in channel['channel_name']:
+				#print(channel['channel_name'])
+				i = i + 1
+				buttons.append(InlineKeyboardButton(channel['channel_name'], callback_data='channel_bittrex_'+str(channel['id'])))
+				if i == 5:
+					i = 0
+					keyboard.append(buttons)
+					buttons = []
+
+		keyboard.append([InlineKeyboardButton("Post Trade", callback_data='post')])
+
+		bot.edit_message_text(chat_id=chat_id,
+						  message_id=query.message.message_id,
+						  text="Choose the option in menu                              :",
+						  reply_markup=InlineKeyboardMarkup(keyboard))
+	except Exception as e:
+		print(e)
+	# ticker = bittrex_getticker(user_id, text)
+	# if ticker:
+	# 	update.message.reply_text('Your {} ticker is valid'.format(text),
+	# 		reply_markup=post_submenu2_keyboard())
+	# else:
+	# 	update.message.reply_text('Your {} ticker is not valid'.format(text),
+	# 		reply_markup=post_submenu2_keyboard())
+
 
 def custom_choice(bot, update):
 	update.message.reply_text('')
 
 	return MAIN_MENU
+
+def post_submenu1(bot, update):
+	text = update.message.text
+
+	update.message.reply_text(
+		"Broadcast has been sent to users for 'x' on 'z':",
+		reply_markup=main_menu_keyboard()
+	)
+
+	return ConversationHandler.END
 
 
 # def received_information(bot, update, user_data):
@@ -316,16 +391,35 @@ def custom_choice(bot, update):
 
 # 	return CHOOSING
 
+def default_msg(bot, update):
+	query = update.callback_query
+	chat_id = query.message.chat_id
+
+	channel_id = query['data'].replace('default_', '')
+
+	bot.edit_message_text(chat_id=chat_id,
+		message_id=query.message.message_id,
+		text="Broadcast has been sent to users for 'x' on 'z':",
+		reply_markup=main_menu_keyboard(),)
+
+	return ConversationHandler.END
+
+
+def custom_msg(bot, update):
+	query = update.callback_query
+	chat_id = query.message.chat_id
+
+	channel_id = query['data'].replace('custom_', '')
+	bot.edit_message_text(chat_id=chat_id,
+		message_id=query.message.message_id,
+		text="type 'x' to specify ticker, type 'z' to specify exchange, and type 'y' to specify price:",
+		)
+
+	return POST
+
 
 def done(bot, update, user_data):
-	if 'choice' in user_data:
-		del user_data['choice']
 
-	update.message.reply_text(""
-							  "{}"
-							  "Until next time!".format(facts_to_str(user_data)))
-
-	user_data.clear()
 	return ConversationHandler.END
 
 
@@ -334,21 +428,19 @@ def error(bot, update, error):
 	logger.warning('Update "%s" caused error "%s"', update, error)
 
 
-import logging
-
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 					level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
-REGISTER, MAIN_MENU, POST1, POST2, VIEW, VIEW_DEFAULTMESSAGE = range(6)
+REGISTER, MAIN_MENU, POST, VIEW, VIEW_DEFAULTMESSAGE = range(5)
 
-reply_keyboard = [['1', '2'],
-				  ['3', '4'],
-				  ['Done']]
-
-markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+# reply_keyboard = [['1', '2'],
+# 				  ['3', '4'],
+# 				  ['Done']]
+#
+# markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
 
 ############################# Handlers #########################################
 updater = Updater('637840473:AAHi-_WkFXq8kTXSQyUR7dw5arDxW0Zaje4')
@@ -365,10 +457,17 @@ updater.dispatcher.add_handler(CallbackQueryHandler(view_menu, pattern='view'))
 updater.dispatcher.add_handler(CallbackQueryHandler(view_submenu1, pattern='^vs1$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(view_submenu2, pattern='^vs2$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(view_submenu3, pattern='^vs3$'))
+
 updater.dispatcher.add_handler(CallbackQueryHandler(select_channels_adminmenu, pattern='^vs1_21$'))
+updater.dispatcher.add_handler(CallbackQueryHandler(ticker_binance_choice, pattern='^ps1$'))
+updater.dispatcher.add_handler(CallbackQueryHandler(ticker_bittrex_choice, pattern='^ps2$'))
 
+updater.dispatcher.add_handler(CallbackQueryHandler(ticker_binance_choiced, pattern='^channel_binance_'))
+updater.dispatcher.add_handler(CallbackQueryHandler(ticker_bittrex_choiced, pattern='^channel_bittrex_'))
+#
+#updater.dispatcher.add_handler(CallbackQueryHandler(view_submenu3, pattern='^vs3$'))
+#
 
-#CommandHandler('start', reg_menu)
 conv_handler = ConversationHandler(
 	#per_message = True,
 	entry_points=[CallbackQueryHandler(reg_menu, pattern='register')],
@@ -382,12 +481,12 @@ conv_handler = ConversationHandler(
 
 conv_handler2 = ConversationHandler(
 	#per_message = True,
-	entry_points=[CallbackQueryHandler(post_submenu1, pattern='^ps1$'),
-					CallbackQueryHandler(post_submenu2, pattern='^ps2$')],
+	entry_points=[CallbackQueryHandler(default_msg, pattern='^default_'),
+					CallbackQueryHandler(custom_msg, pattern='^custom_')],
 
 	states={
-		POST1: [MessageHandler(Filters.text, ticker_binancechoice,	pass_user_data=True),],
-		POST2: [MessageHandler(Filters.text, ticker_bittrexchoice,	pass_user_data=True),],
+		POST: [MessageHandler(Filters.text, post_submenu1),],
+		#POST2: [MessageHandler(Filters.text, post_submenu2),],
 	},
 
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]

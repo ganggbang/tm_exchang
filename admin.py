@@ -4,14 +4,26 @@ import json
 from connection import create_connection, save
 
 def addbroadcastmsg(user_id, message):
-	connection = create_connection()
+
 	data = {
 		"tm_id": user_id,
 		"message": message
 	}
 
-	save(connection, 'broadcasting_msg', data)
+	save('broadcasting_msg', data)
+
+def get_users_by_channel_id(channel_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `user_id` FROM `using_channels` WHERE `is_enable` = 1 AND `channel_id` = "+str(channel_id))
+
+	users = []
+	for ch in cursor.fetchall():
+		users.append(ch)
 	connection.close()
+
+	return users
+
 
 def getusers_forbroadcastmessage():
 	connection = create_connection()
@@ -24,7 +36,8 @@ def getusers_forbroadcastmessage():
 	connection.close()
 
 	return users
-	
+
+
 def getchannelbyid(channel_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -33,10 +46,11 @@ def getchannelbyid(channel_id):
 	connection.close()
 	return ch
 
-def getchannels_admin():
+
+def get_binancechannels_admin():
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `id`,`channel_name`, `is_enable` FROM `channels`")
+	cursor.execute("SELECT `id`,`channel_name`, `is_enable` FROM `channels` WHERE `is_bittrex` = 0")
 
 	channels = []
 	for ch in cursor.fetchall():
@@ -45,15 +59,26 @@ def getchannels_admin():
 
 	return channels
 
-def createChannel(channel_name):
-	connection = create_connection()
 
+def get_bittrexchannels_admin():
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `id`,`channel_name`, `is_enable` FROM `channels` WHERE `is_bittrex` = 1")
+
+	channels = []
+	for ch in cursor.fetchall():
+		channels.append(ch)
+	connection.close()
+
+	return channels
+
+
+def createChannel(channel_name):
 	data = {
 		"channel_name": channel_name
 	}
 
-	save(connection, 'channels', data)
-	connection.close()
+	save('channels', data)
 
 def change_channelname(channel_id, newchannel_name):
 	connection = create_connection()
@@ -66,6 +91,7 @@ def change_channelname(channel_id, newchannel_name):
 	connection.commit()
 	connection.close()
 
+
 def getbinanceapi(user_id):
 	connection = create_connection()	
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -76,6 +102,7 @@ def getbinanceapi(user_id):
 	if api:
 		return api
 	return None
+
 
 def getbittrexapi(user_id):
 	connection = create_connection()
@@ -88,6 +115,7 @@ def getbittrexapi(user_id):
 		return api
 	return None
 
+
 def getTotalUsers():
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -98,6 +126,7 @@ def getTotalUsers():
 	if count:
 		return count['count']
 	return False
+
 
 def getActiveUsers():
 	connection = create_connection()
@@ -110,6 +139,7 @@ def getActiveUsers():
 		return count['count']
 	return False
 
+
 def getDisableUsers():
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -120,6 +150,7 @@ def getDisableUsers():
 	if count:
 		return count['count']
 	return False
+
 
 def getDefaultMsg():
 	connection = create_connection()	
@@ -132,6 +163,7 @@ def getDefaultMsg():
 		return count['default_message']
 	return False
 
+
 def getCustomMsg():
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -142,6 +174,7 @@ def getCustomMsg():
 	if msg:
 		return count['custom_message']
 	return False
+
 
 def setCustomMsg(msg):
 	connection = create_connection()	
