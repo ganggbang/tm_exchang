@@ -131,21 +131,26 @@ def pasteinchannels(channel_id, user_id):
 	connection = create_connection()
 	connection.close()
 
+
 def ordersclose(order_id):
 	connection = create_connection()
 	connection.close()
+
 
 def all_ordersclose():
 	connection = create_connection()
 	connection.close()
 
+
 def viewactive_positions(user_id):
 	connection = create_connection()
 	connection.close()
 
+
 def closeactive_orders(user_id):
 	connection = create_connection()
 	connection.close()
+
 
 def disable_allchannelsql(user_id):
 	connection = create_connection()
@@ -157,6 +162,7 @@ def disable_allchannelsql(user_id):
 	connection.commit()
 	connection.close()
 
+
 def disable_channelsql(channel_id, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -166,6 +172,7 @@ def disable_channelsql(channel_id, user_id):
 	cursor.execute(sql)
 	connection.commit()
 	connection.close()
+
 
 def enable_channelsql(channel_id, user_id):
 	connection = create_connection()
@@ -177,7 +184,8 @@ def enable_channelsql(channel_id, user_id):
 	connection.commit()
 	connection.close()
 
-def getusingchannels(channels, user_id):
+
+def get_usingchannels_by_channels(channels, user_id):
 	szchannels = ", ".join(channels)
 	dict_channels = []
 
@@ -207,12 +215,37 @@ def getticker_channel(channel_id):
 	connection.close()
 	return ticker
 
+def get_channel(channel_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
 
-def getchannels():
+	cursor.execute("SELECT `channel_name`, `ticker`, `is_enable`, `is_bittrex` FROM `channels` WHERE `id` = "+str(channel_id))
+
+	channel = cursor.fetchone()
+	connection.close()
+
+	return channel
+
+
+def get_channels():
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
 	#cursor.execute("SELECT `channel_name`, `id`, `is_enable` FROM `using_channels` WHERE `user_id` = "+str(user_id))
 	cursor.execute("SELECT `channel_name`, `id`, `is_enable` FROM `channels` WHERE `is_enable` = 1")
+
+	channels = []
+	for ch in cursor.fetchall():
+		channels.append(ch)
+	connection.close()
+
+	return channels
+
+
+def get_usingchannels_byuserid(user_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	#cursor.execute("SELECT `channel_name`, `id`, `is_enable` FROM `using_channels` WHERE `user_id` = "+str(user_id))
+	cursor.execute("SELECT `channel_id` FROM `using_channels` WHERE `is_enable` = 1 AND `user_id` = "+str(user_id))
 
 	channels = []
 	for ch in cursor.fetchall():
@@ -232,9 +265,7 @@ def checkuser(update):
 	}
 
 	if existing_user(user_id) is False:
-
 		save('users', user)
-
 
 
 def existing_user(user_id):
@@ -285,6 +316,7 @@ def AutomationOn(user_id):
 	cursor.close()
 	connection.close()
 
+
 def AutomationOff(user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -294,6 +326,7 @@ def AutomationOff(user_id):
 	connection.commit()
 	cursor.close()
 	connection.close()
+
 
 def DemoOn(user_id):
 	connection = create_connection()
@@ -305,6 +338,7 @@ def DemoOn(user_id):
 	cursor.close()
 	connection.close()
 
+
 def DemoOff(user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -314,6 +348,29 @@ def DemoOff(user_id):
 	connection.commit()
 	cursor.close()
 	connection.close()
+
+
+def getbinanceapi(user_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `binance_api` FROM `admins` WHERE `tm_id` = "+str(user_id))
+	api = cursor.fetchone()
+	connection.close()
+	if api:
+		return api
+	return None
+
+
+def getbittrexapi(user_id):
+	connection = create_connection()
+	cursor = connection.cursor(pymysql.cursors.DictCursor)
+	cursor.execute("SELECT `bittrex_api` FROM `admins` WHERE `tm_id` = "+str(user_id))
+	api = cursor.fetchone()
+	connection.close()
+	if api:
+		return api
+	return None
+
 
 def setBittrexAPI(api, user_id):
 	connection = create_connection()
@@ -453,22 +510,3 @@ def setTrigger(trigger, user_id):
 	cursor.close()
 	connection.close()
 
-def getbinanceapi(user_id):
-	connection = create_connection()
-	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `binance_api` FROM `admins` WHERE `tm_id` = "+str(user_id))
-	api = cursor.fetchone()
-	connection.close()
-	if api:
-		return api
-	return None
-
-def getbittrexapi(user_id):
-	connection = create_connection()
-	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `bittrex_api` FROM `admins` WHERE `tm_id` = "+str(user_id))
-	api = cursor.fetchone()
-	connection.close()
-	if api:
-		return api
-	return None

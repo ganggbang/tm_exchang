@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 from user import *
+from admin import *
 import datetime
 from dateutil import relativedelta
 from dateutil import parser
@@ -13,8 +14,12 @@ from telegram.ext import (Updater, CommandHandler, CallbackQueryHandler, Message
 
 
 def start(bot, update):
-	checkuser(update)
-	update.message.reply_text(main_menu_message(), reply_markup=main_menu_keyboard())
+	query = update.callback_query
+	if existing_user(update['message']['chat']['id']) is True:
+		checkuser(update)
+		update.message.reply_text(reg_menu_message(), reply_markup=reg_menu_keyboard())
+	else:
+		update.message.reply_text(main_menu_message(), reply_markup=main_menu_keyboard())
 
 
 def about_menu(bot, update):
@@ -27,18 +32,24 @@ def about_menu(bot, update):
 
 def reg_menu(bot, update):
 	query = update.callback_query
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text="Please type ChannelID",
-		reply_markup=reg_menu_keyboard())
+	user_id = query.message.chat_id
 
-
-def pastein_menu(bot, update):
-	query = update.callback_query
-
-	bot.send_message(chat_id=query.message.chat_id,
-		text="Please type ChannelID")
-	return PASTEIN
+	try:
+		if getbinanceapi(user_id) is None or getbittrexapi(user_id) is None:
+			bot.edit_message_text(chat_id = user_id,
+				  message_id = query.message.message_id,
+				  text = settings_submenu1_message(),
+				  reply_markup = settings_submenu1_keyboard())
+		else:
+			bot.edit_message_text(chat_id = user_id,
+				message_id=query.message.message_id,
+				text = reg_menu_message(),
+				reply_markup = reg_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			  message_id=query.message.message_id,
+			  text=""+str(e),
+			  reply_markup=main_menu_keyboard())
 
 
 def main_menu(bot, update):
@@ -81,29 +92,49 @@ def view_submenu3(bot, update):
 
 def select_channels_menu(bot, update):
 	query = update.callback_query
-	channels = getchannels()
+	user_id = query.message.chat_id
+	channels = get_usingchannels_byuserid(user_id)
 	keyboard = []
 
-	for ch in channels:
-		if ch['is_enable'] == 1:
-			keyboard.append([InlineKeyboardButton(ch['channel_name'], callback_data='as2_1'+str(ch['id']))])
-		else:
-			keyboard.append([InlineKeyboardButton('* '+ch['channel_name'], callback_data='as2_1'+str(ch['id']))])
-	keyboard.append([InlineKeyboardButton('Actions menu', callback_data='actions')])
+	try:
+		if channels:
+			i = 0
+			buttons = []
+			for channel in channels:
+				i = i + 1
+				buttons.append(InlineKeyboardButton(get_channel(channel['channel_id'])['channel_name'],
+													callback_data='as2_1' + str(channel['channel_id'])))
+				if i == 5:
+					i = 0
+					keyboard.append(buttons)
+					buttons = []
 
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text=select_channels_message(),
-		reply_markup=InlineKeyboardMarkup(keyboard))
+			keyboard.append(buttons)
+			keyboard.append([InlineKeyboardButton('Actions menu', callback_data='actions')])
+
+			bot.edit_message_text(chat_id = user_id,
+								  message_id = query.message.message_id,
+								  text = "Choose the option in menu                              :",
+								  reply_markup = InlineKeyboardMarkup(keyboard))
+		else:
+			bot.edit_message_text(chat_id=query.message.chat_id,
+								message_id=query.message.message_id,
+								text=main_menu_message(),
+								reply_markup=main_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+							  message_id=query.message.message_id,
+							  text="" + str(e),
+							  reply_markup=main_menu_keyboard())
 
 
 def actionchannels_menu(bot, update):
 	query = update.callback_query
 
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text=actionchannels_message(),
-		reply_markup=actionchannels_keyboard(query['data'].replace('as2_1', '')))
+	bot.edit_message_text(chat_id = query.message.chat_id,
+		message_id = query.message.message_id,
+		text = actionchannels_message(),
+		reply_markup = actionchannels_keyboard(query['data'].replace('as2_1', '')))
 
 
 def registredchannels_menu(bot, update):
@@ -234,10 +265,10 @@ def settings_submenu3(bot, update):
 
 def actions_menu(bot, update):
 	query = update.callback_query
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text=actions_menu_message(),
-		reply_markup=actions_menu_keyboard())
+	bot.edit_message_text(chat_id = query.message.chat_id,
+		message_id = query.message.message_id,
+		text = actions_menu_message(),
+		reply_markup = actions_menu_keyboard())
 
 
 def actions_submenu1(bot, update):
@@ -376,28 +407,6 @@ def view_individual_keyboard():
 	return InlineKeyboardMarkup(keyboard)
 
 
-def view_submenu1_keyboard(user_id):
-	channels = getchannels(user_id)
-	print(channels)
-	d = []
-	for ch in channels:
-		d.append(str(ch['id']))
-
-	using_channels = getusingchannels(d, user_id)
-	print(using_channels)
-
-	keyboard = []
-	i = 1
-	for ch in channels:
-		if ch['id'] in using_channels:
-			keyboard.append([InlineKeyboardButton('* '+ch['channel_name'], callback_data='vs1_1'+str(ch['id']))])
-		else:
-			keyboard.append([InlineKeyboardButton(ch['channel_name'], callback_data='vs1_1'+str(ch['id']))])
-	keyboard.append([InlineKeyboardButton('View menu', callback_data='view')])
-
-	return InlineKeyboardMarkup(keyboard)
-
-
 def view_submenu2_keyboard():
 	keyboard = [[InlineKeyboardButton('Bittrex', callback_data='vs1_21')],
 			[InlineKeyboardButton('Binance', callback_data='vs1_22')],
@@ -521,6 +530,10 @@ def view_menu_message():
 	return 'Choose the option in menu:'
 
 
+def reg_menu_message():
+	return "Welcome, your 7-day FREE trial begins once you've entered your Channel's channelID"
+
+
 def view_submenu1_message():
 	return 'Choose the option in menu:'
 
@@ -636,7 +649,7 @@ def bittrex_api_choice(bot, update):
 	setBittrexAPI(text, user_id)
 
 	update.message.reply_text('Your {} API has been successfully added'.format(text.lower()),
-		reply_markup=main_menu_keyboard())
+		reply_markup = main_menu_keyboard())
 
 	return ConversationHandler.END
 
@@ -647,7 +660,7 @@ def binance_api_choice(bot, update):
 	user_id = update['message']['chat']['id']
 	setBinanceAPI(text, user_id)
 	update.message.reply_text('Your {} API has been successfully added'.format(text.lower()),
-		reply_markup=main_menu_keyboard())
+		reply_markup = main_menu_keyboard())
 
 	return ConversationHandler.END
 
@@ -658,7 +671,7 @@ def pos_size_choice(bot, update):
 	user_id = update['message']['chat']['id']
 	set_position_size_per(text, user_id)
 	update.message.reply_text('Position Size {} saved'.format(text.lower()),
-		reply_markup=main_menu_keyboard())
+		reply_markup = main_menu_keyboard())
 
 	return ConversationHandler.END
 
@@ -668,7 +681,7 @@ def spread_choice(bot, update):
 	user_id = update['message']['chat']['id']
 	set_spread_percent(text, user_id)
 	update.message.reply_text('Spread Percent {} saved'.format(text.lower()),
-		reply_markup=main_menu_keyboard())
+		reply_markup = main_menu_keyboard())
 
 	return ConversationHandler.END
 
@@ -678,7 +691,7 @@ def proffit_choice(bot, update):
 	user_id = update['message']['chat']['id']
 	set_take_profit(text, user_id)
 	update.message.reply_text('Take Profit {} saved'.format(text.lower()),
-		reply_markup=main_menu_keyboard())
+		reply_markup = main_menu_keyboard())
 
 	return ConversationHandler.END
 
@@ -688,7 +701,7 @@ def stoploss_choice(bot, update):
 	user_id = update['message']['chat']['id']
 	setStopLoss(text, user_id)
 	update.message.reply_text('Stop Loss {} saved'.format(text.lower()),
-		reply_markup=main_menu_keyboard())
+		reply_markup = main_menu_keyboard())
 
 	return ConversationHandler.END
 
@@ -700,7 +713,7 @@ def pastein_choise(bot, update):
 	pasteinchannels(text, user_id)
 
 	update.message.reply_text('Channel {} successfully registered!'.format(text.lower()),
-		reply_markup=main_menu_keyboard())
+		reply_markup = main_menu_keyboard())
 
 	return ConversationHandler.END
 
@@ -719,9 +732,9 @@ def trigger_choice(bot, update):
 def action_demoon(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text="User currently in demo-mode, random variables have been assigned. To act as the broadcaster, head over to Actions > Offline Broadcast, this will mimic the action of receiving a broadcasted ticker by your channel. To exit demo return to the demo menu option and select OFF",
-		reply_markup=main_menu_keyboard())
+		message_id = query.message.message_id,
+		text = "User currently in demo-mode, random variables have been assigned. To act as the broadcaster, head over to Actions > Offline Broadcast, this will mimic the action of receiving a broadcasted ticker by your channel. To exit demo return to the demo menu option and select OFF",
+		reply_markup = main_menu_keyboard())
 	DemoOn(query.message.chat_id)
 
 
@@ -754,7 +767,6 @@ def action_autooff(bot, update):
 
 
 def bittrex_bal(user_id):
-
 	text = '**Bittrex** '
 	balances = bittrex_getbalances(user_id)
 	for balance in balances['result']:
@@ -815,13 +827,19 @@ def binance_bal_menu(bot, update):
 def both_bal(bot, update):
 	query = update.callback_query
 
-	text = bittrex_bal(query.message.chat_id)
-	text += binance_bal(query.message.chat_id)
+	try:
+		text = bittrex_bal(query.message.chat_id)
+		text += binance_bal(query.message.chat_id)
 
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text=text,
-		reply_markup=main_menu_keyboard())
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			message_id=query.message.message_id,
+			text=text,
+			reply_markup=main_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			  message_id=query.message.message_id,
+			  text=""+str(e),
+			  reply_markup=main_menu_keyboard())
 
 
 def enable_channel(bot, update):
@@ -829,11 +847,17 @@ def enable_channel(bot, update):
 	channel_id = query['data']
 	user_id = query.message.chat_id
 
-	enable_channelsql(channel_id.replace('enable_vs1_1', ''), user_id)
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id = query.message.message_id,
-		text  ="Selected channel have been enabled",
-		reply_markup = main_menu_keyboard())
+	try:
+		enable_channelsql(channel_id.replace('enable_vs1_1', ''), user_id)
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			message_id = query.message.message_id,
+			text  ="Selected channel have been enabled",
+			reply_markup = main_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			  message_id=query.message.message_id,
+			  text=""+str(e),
+			  reply_markup=main_menu_keyboard())
 
 
 def disable_allchannel(bot, update):
@@ -841,23 +865,34 @@ def disable_allchannel(bot, update):
 	#channel_id = query['data']
 	user_id = query.message.chat_id
 
-	disable_allchannelsql(user_id)
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text="Disabled ALL channels",
-		reply_markup=main_menu_keyboard())
-
+	try:
+		disable_allchannelsql(user_id)
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			message_id=query.message.message_id,
+			text="Disabled ALL channels",
+			reply_markup=main_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			  message_id=query.message.message_id,
+			  text=""+str(e),
+			  reply_markup=main_menu_keyboard())
 
 def disable_channel(bot, update):
 	query = update.callback_query
 	channel_id = query['data']
 	user_id = query.message.chat_id
 
-	disable_channelsql(channel_id.replace('disable_vs1_1', ''),  user_id)
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text="Selected channel have been disabled",
-		reply_markup=main_menu_keyboard())
+	try:
+		disable_channelsql(channel_id.replace('disable_vs1_1', ''),  user_id)
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			message_id=query.message.message_id,
+			text="Selected channel have been disabled",
+			reply_markup=main_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			  message_id=query.message.message_id,
+			  text=""+str(e),
+			  reply_markup=main_menu_keyboard())
 
 
 def cancelorder(chat_id, order):
@@ -881,23 +916,30 @@ def cancelorder_menu(bot, update):
 	# r = binance_get_all_orders(chat_id, symbol = 'NEOBTC')
 	# bittrex_orders = bittrex_get_open_orders(chat_id, market='btc-neo')
 
-	s = query_data.split('_')
-	channel_id = s[0]
-	orderId = s[1]
+	try:
+		s = query_data.split('_')
+		channel_id = s[0]
+		orderId = s[1]
 
-	if orderId.upper() == 'ALL':
-		orders = get_orders(chat_id)
-		for order in orders:
+		if orderId.upper() == 'ALL':
+			orders = get_orders(chat_id)
+			for order in orders:
+				result = cancelorder(chat_id, order)
+		else:
+			order = get_order(orderId)
 			result = cancelorder(chat_id, order)
-	else:
-		order = get_order(orderId)
-		result = cancelorder(chat_id, order)
 
-	keyboard = orders_keyboard(chat_id, channel_id)
-	bot.edit_message_text(chat_id=chat_id,
-		message_id=query.message.message_id,
-		text="Selected orders have been "+result['status']+": ",
-		reply_markup=keyboard)
+		keyboard = orders_keyboard(chat_id, channel_id)
+		bot.edit_message_text(chat_id=chat_id,
+			message_id=query.message.message_id,
+			text="Selected orders have been "+result['status']+": ",
+			reply_markup=keyboard)
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			  message_id=query.message.message_id,
+			  text=""+str(e),
+			  reply_markup=main_menu_keyboard())
+
 
 def get_timeactive(chat_id, szDate, exchange):
 
@@ -974,6 +1016,7 @@ def active_positions_menu(bot, update):
 		text="Choose the option in menu: ",
 		reply_markup=active_positions_keyboard(channel_id))
 
+
 def offlinebr_menu(bot, update):
 	query = update.callback_query
 	chat_id = query.message.chat_id
@@ -1001,41 +1044,47 @@ def closeactive_orders_menu(bot, update):
 	chat_id = query.message.chat_id
 	channel_id = query['data'].replace('closeactive_','')
 
-	orders = get_orders_by_filled(channel_id, chat_id)
+	try:
+		orders = get_orders_by_filled(channel_id, chat_id)
 
-	keyboard = []
+		keyboard = []
 
-	for order in orders:
-		if order['exchange'].upper() == 'BITTREX':
-			bittrex_orders = bittrex_get_order_history(chat_id, market='btc-neo'.upper())
-			for bit_order in bittrex_orders['result']:
-				if bit_order['Closed'] is not False and bit_order['OrderUuid'] == order['orderId']:
-					current_price = bittrex_getticker(chat_id, market=order['ticker'])['result']['Ask']
-					keyboard.append([InlineKeyboardButton(order['ticker'] + ":BITTREX, Bid Price: $" + str(
-						bit_order['Price']) + ", Current: $" + str(
-						current_price) + ", Current return: X%, " + get_timeactive(chat_id, bit_order['Closed'], "BITTREX"),
-							callback_data='closeorder_' + str(channel_id) + '_' + str(bit_order['OrderUuid']))])
+		for order in orders:
+			if order['exchange'].upper() == 'BITTREX':
+				bittrex_orders = bittrex_get_order_history(chat_id, market='btc-neo'.upper())
+				for bit_order in bittrex_orders['result']:
+					if bit_order['Closed'] is not False and bit_order['OrderUuid'] == order['orderId']:
+						current_price = bittrex_getticker(chat_id, market=order['ticker'])['result']['Ask']
+						keyboard.append([InlineKeyboardButton(order['ticker'] + ":BITTREX, Bid Price: $" + str(
+							bit_order['Price']) + ", Current: $" + str(
+							current_price) + ", Current return: X%, " + get_timeactive(chat_id, bit_order['Closed'], "BITTREX"),
+								callback_data='closeorder_' + str(channel_id) + '_' + str(bit_order['OrderUuid']))])
 
-		elif order['exchange'].upper() == 'BINANCE':
-			binance_orders = binance_get_all_orders(chat_id, symbol='NEOBTC')
-			for bin_order in binance_orders:
-				if bin_order['status'] == 'FILLED' and int(order['orderId']) == bin_order['orderId']:
-					current_price = binance_get_symbol_ticker(chat_id, order['ticker'])
-					keyboard.append([InlineKeyboardButton(order['ticker'] + ":BINANCE, Bid Price: $" + str(
-						bin_order['price']) + ", Current: $" + str(
-						current_price) + ", Current return: X%, " + get_timeactive(chat_id, bin_order['time'], "BINANCE"),
-							callback_data='closeorder_' + str(channel_id) + '_' + str(bin_order['orderId']))])
+			elif order['exchange'].upper() == 'BINANCE':
+				binance_orders = binance_get_all_orders(chat_id, symbol='NEOBTC')
+				for bin_order in binance_orders:
+					if bin_order['status'] == 'FILLED' and int(order['orderId']) == bin_order['orderId']:
+						current_price = binance_get_symbol_ticker(chat_id, order['ticker'])
+						keyboard.append([InlineKeyboardButton(order['ticker'] + ":BINANCE, Bid Price: $" + str(
+							bin_order['price']) + ", Current: $" + str(
+							current_price) + ", Current return: X%, " + get_timeactive(chat_id, bin_order['time'], "BINANCE"),
+								callback_data='closeorder_' + str(channel_id) + '_' + str(bin_order['orderId']))])
 
-	keyboard.append([InlineKeyboardButton("Close Winners", callback_data='closeorder_' + str(channel_id) + '_winners')])
-	keyboard.append([InlineKeyboardButton("Close Losses", callback_data='closeorder_' + str(channel_id) + '_losses')])
-	keyboard.append([InlineKeyboardButton("Close ALL Orders", callback_data='closeorder_' + str(channel_id) + '_all')])
-	keyboard.append([InlineKeyboardButton("Actions Menu", callback_data='actions')])
-	#closeactive_orders(order_id)
+		keyboard.append([InlineKeyboardButton("Close Winners", callback_data='closeorder_' + str(channel_id) + '_winners')])
+		keyboard.append([InlineKeyboardButton("Close Losses", callback_data='closeorder_' + str(channel_id) + '_losses')])
+		keyboard.append([InlineKeyboardButton("Close ALL Orders", callback_data='closeorder_' + str(channel_id) + '_all')])
+		keyboard.append([InlineKeyboardButton("Actions Menu", callback_data='actions')])
+		#closeactive_orders(order_id)
 
-	bot.edit_message_text(chat_id=chat_id,
-		message_id=query.message.message_id,
-		text="Choose the option in menu:",
-		reply_markup=InlineKeyboardMarkup(keyboard))
+		bot.edit_message_text(chat_id=chat_id,
+			message_id=query.message.message_id,
+			text="Choose the option in menu:",
+			reply_markup=InlineKeyboardMarkup(keyboard))
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			  message_id=query.message.message_id,
+			  text=""+str(e),
+			  reply_markup=main_menu_keyboard())
 
 
 def orderclose(chat_id, order):
@@ -1063,42 +1112,115 @@ def orderclose(chat_id, order):
 def select_ordersclose_menu(bot, update):
 	query = update.callback_query
 	chat_id = query.message.chat_id
-	query_data = query['data'].replace('closeorder_', '')
 
-	s = query_data.split('_')
-	channel_id = s[0]
-	orderId = s[1]
+	try:
+		query_data = query['data'].replace('closeorder_', '')
 
-	if orderId.upper() == 'ALL':
-		orders = get_orders_by_filled(channel_id, chat_id)
-		for order in orders:
+		s = query_data.split('_')
+		channel_id = s[0]
+		orderId = s[1]
+
+		if orderId.upper() == 'ALL':
+			orders = get_orders_by_filled(channel_id, chat_id)
+			for order in orders:
+				orderclose(order)
+		elif orderId.upper() == 'WINNERS':#todo fix!
+			orders = get_orders_by_filled(channel_id, chat_id)
+			#for order in orders:
+			#	orderclose(order)
+		elif orderId.upper() == 'LOSSES':#todo fix!
+			orders = get_orders_by_filled(channel_id, chat_id)
+			#for order in orders:
+			#	orderclose(order)
+		else:
+			order = get_order(channel_id, orderId)
 			orderclose(order)
-	elif orderId.upper() == 'WINNERS':#todo fix!
-		orders = get_orders_by_filled(channel_id, chat_id)
-		#for order in orders:
-		#	orderclose(order)
-	elif orderId.upper() == 'LOSSES':#todo fix!
-		orders = get_orders_by_filled(channel_id, chat_id)
-		#for order in orders:
-		#	orderclose(order)
-	else:
-		order = get_order(channel_id, orderId)
-		orderclose(order)
 
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text="Choose the option in menu:",
-		reply_markup=main_menu_keyboard())
-
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			message_id=query.message.message_id,
+			text="Choose the option in menu:",
+			reply_markup=main_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			  message_id=query.message.message_id,
+			  text=""+str(e),
+			  reply_markup=main_menu_keyboard())
 
 def paste_inchannelid(bot, update):
 	query = update.callback_query
+	user_id = query.message.chat_id
+	channels = get_bittrexchannels_admin()
+	keyboard = []
 
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text="Choose the option in menu:",
-		reply_markup=main_menu_keyboard())
+	try:
+		i = 0
+		buttons = []
+		keyboard.append([InlineKeyboardButton("Register", callback_data='register')])
+		for channel in channels:
+			if "BTC" in channel['channel_name']:
+				i = i + 1
+				buttons.append(InlineKeyboardButton(channel['channel_name'], callback_data='channel_reg_'+str(channel['id'])))
+				if i == 5:
+					i = 0
+					keyboard.append(buttons)
+					buttons = []
 
+		keyboard.append(buttons)
+		keyboard.append([InlineKeyboardButton("Register", callback_data='registers')])
+
+		bot.edit_message_text(chat_id=user_id,
+						  message_id=query.message.message_id,
+						  text="Choose the option in menu                              :",
+						  reply_markup=InlineKeyboardMarkup(keyboard))
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+							  message_id=query.message.message_id,
+							  text="" + str(e),
+							  reply_markup=main_menu_keyboard())
+
+
+def view_submenu1_keyboard(user_id):
+	channels = get_usingchannels_byuserid(user_id)
+	print(channels)
+
+	i = 0
+	keyboard = []
+	buttons = []
+
+	if channels:
+		for channel in channels:
+			i = i + 1
+			buttons.append(InlineKeyboardButton(get_channel(channel['channel_id'])['channel_name'],
+												callback_data='channel_' + str(channel['channel_id'])))
+			if i == 5:
+				i = 0
+				keyboard.append(buttons)
+				buttons = []
+
+		keyboard.append(buttons)
+	keyboard.append([InlineKeyboardButton('View menu', callback_data='view')])
+	return InlineKeyboardMarkup(keyboard)
+
+
+def reg_channel(bot, update):
+	query = update.callback_query
+	user_id = query.message.chat_id
+	channel_id = query['data'].replace('channel_reg_', '')
+
+	try:
+		save('using_channels', data={
+			'channel_id': str(channel_id),
+			'user_id': str(user_id),
+		})
+		bot.edit_message_text(chat_id = query.message.chat_id,
+			  message_id = query.message.message_id,
+			  text = reg_menu_message(),
+			  reply_markup = reg_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id = query.message.chat_id,
+							  message_id = query.message.message_id,
+							  text="" + str(e),
+							  reply_markup = main_menu_keyboard())
 
 def is_per_or_amount(pos_size):
 	if pos_size['pos_size_amount'] is not None and pos_size['pos_size_per'] is None:
@@ -1112,53 +1234,59 @@ def broadcast_answer(bot, update):
 	message_id = query['data'].replace('bmy_', '')
 	chat_id = query.message.chat_id
 
-	msg = getbroadcastmsgbyid(message_id)
+	try:
+		msg = getbroadcastmsgbyid(message_id)
 
-	if is_settings(chat_id) is None:
-		settings_submenu3(bot, update)
-		return
+		if is_settings(chat_id) is None:
+			settings_submenu3(bot, update)
+			return
 
-	m = re.search(r"(.*):(.*)@(.*)", msg['message'])
+		m = re.search(r"(.*):(.*)@(.*)", msg['message'])
 
-	if m.group(0) and m.group(1) and m.group(2) and m.group(3):
-		exchange = m.group(2)
-		symbol = m.group(1).upper()
-		price = m.group(3)
+		if m.group(0) and m.group(1) and m.group(2) and m.group(3):
+			exchange = m.group(2)
+			symbol = m.group(1).upper()
+			price = m.group(3)
 
-		pos_size = is_per_or_amount(get_position_size(chat_id))
-		spread_size = get_spread_percent(chat_id)
+			pos_size = is_per_or_amount(get_position_size(chat_id))
+			spread_size = get_spread_percent(chat_id)
 
-		if exchange.upper() == 'BINANCE':
-			balance = binance_getbalance(chat_id, 'BTC')['free']
-			q = get_percentage(pos_size, balance)
-			q = q / float(price)
-			p = get_percentage(spread_size, price)
-			price = float(price) + p
-			result = binance_order_limit_buy(chat_id, symbol=symbol, side='BUY', price=price, quantity=q)
-			#if result['orderId']:
-			if isinstance(result, dict):
-				insert_order(chat_id, symbol, 'BINANCE', result['orderId'])
-				message = "Bid order has been placed for '" + str(m.group(1)).upper() + "':'" + str(
-					m.group(2)).upper() + "' at '" + str(m.group(3)).upper() + "' BTC"
-			else:
-				message = result
-		elif exchange.upper() == 'BITTREX':
-			balance = bittrex_getbalance(chat_id, 'BTC')['result']['Available']
-			q = get_percentage(pos_size, balance)
-			q = q / float(price)
-			p = get_percentage(spread_size, price)
-			price = float(price) + p
+			if exchange.upper() == 'BINANCE':
+				balance = binance_getbalance(chat_id, 'BTC')['free']
+				q = get_percentage(pos_size, balance)
+				q = q / float(price)
+				p = get_percentage(spread_size, price)
+				price = float(price) + p
+				result = binance_order_limit_buy(chat_id, symbol=symbol, side='BUY', price=price, quantity=q)
+				#if result['orderId']:
+				if isinstance(result, dict):
+					insert_order(chat_id, symbol, 'BINANCE', result['orderId'])
+					message = "Bid order has been placed for '" + str(m.group(1)).upper() + "':'" + str(
+						m.group(2)).upper() + "' at '" + str(m.group(3)).upper() + "' BTC"
+				else:
+					message = result
+			elif exchange.upper() == 'BITTREX':
+				balance = bittrex_getbalance(chat_id, 'BTC')['result']['Available']
+				q = get_percentage(pos_size, balance)
+				q = q / float(price)
+				p = get_percentage(spread_size, price)
+				price = float(price) + p
 
-			result = bittrex_buy_limit(chat_id, market=symbol, quantity=q, rate=price)
-			if result['success'] is not True:
-				message = result['message']
-			else:
-				message = "Bid order has been placed for '"+str(m.group(1)).upper()+"':'"+str(m.group(2)).upper()+"' at '"+str(m.group(3)).upper()+"' BTC"
-				insert_order(chat_id, symbol, 'BITTREX', result['result']['uuid'])
-		bot.edit_message_text(chat_id=chat_id,
-							  message_id=query.message.message_id,
-							  text=message,
-							  reply_markup=main_menu_keyboard())
+				result = bittrex_buy_limit(chat_id, market=symbol, quantity=q, rate=price)
+				if result['success'] is not True:
+					message = result['message']
+				else:
+					message = "Bid order has been placed for '"+str(m.group(1)).upper()+"':'"+str(m.group(2)).upper()+"' at '"+str(m.group(3)).upper()+"' BTC"
+					insert_order(chat_id, symbol, 'BITTREX', result['result']['uuid'])
+			bot.edit_message_text(chat_id = chat_id,
+								  message_id = query.message.message_id,
+								  text = message,
+								  reply_markup = main_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			  message_id=query.message.message_id,
+			  text=""+str(e),
+			  reply_markup=main_menu_keyboard())
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -1208,9 +1336,9 @@ updater.dispatcher.add_handler(CallbackQueryHandler(disable_allchannel, pattern=
 updater.dispatcher.add_handler(CallbackQueryHandler(disable_channel, pattern='^disable_v'))
 updater.dispatcher.add_handler(CallbackQueryHandler(enable_channel, pattern='^enable_'))
 
+updater.dispatcher.add_handler(CallbackQueryHandler(reg_channel, pattern='^channel_reg_'))
 updater.dispatcher.add_handler(CallbackQueryHandler(broadcast_answer, pattern='^bmy_'))
 updater.dispatcher.add_handler(CallbackQueryHandler(main_menu, pattern='^bmn_'))
-#bmn_
 
 updater.dispatcher.add_handler(CallbackQueryHandler(offlinebr_menu, pattern='^as1$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(select_channels_menu, pattern='^as2$'))
@@ -1228,7 +1356,7 @@ updater.dispatcher.add_handler(CallbackQueryHandler(pay_renew, pattern='^pay_2$'
 updater.dispatcher.add_handler(CallbackQueryHandler(bittrex_bal_menu, pattern='vs1_21'))
 updater.dispatcher.add_handler(CallbackQueryHandler(binance_bal_menu, pattern='vs1_22'))
 updater.dispatcher.add_handler(CallbackQueryHandler(both_bal, pattern='vs1_23'))
-#updater.dispatcher.add_handler(CallbackQueryHandler(pay_submenu, pattern='m5_1'))
+updater.dispatcher.add_handler(CallbackQueryHandler(paste_inchannelid, pattern='paste_inchannelid'))
 
 updater.dispatcher.add_error_handler(error)
 
@@ -1296,15 +1424,15 @@ conv_handler6 = ConversationHandler(
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
 )
 
-conv_handler7 = ConversationHandler(
-	entry_points=[CallbackQueryHandler(pastein_menu, pattern='paste_inchannelid'),],
-
-	states={
-		PASTEIN: [MessageHandler(Filters.text, pastein_choise),],
-	},
-
-	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
-)
+# conv_handler7 = ConversationHandler(
+# 	entry_points=[CallbackQueryHandler(pastein_menu, pattern='paste_inchannelid'),],
+#
+# 	states={
+# 		PASTEIN: [MessageHandler(Filters.text, pastein_choise),],
+# 	},
+#
+# 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
+# )
 
 updater.dispatcher.add_handler(conv_handler)
 updater.dispatcher.add_handler(conv_handler2)
@@ -1312,7 +1440,7 @@ updater.dispatcher.add_handler(conv_handler3)
 updater.dispatcher.add_handler(conv_handler4)
 updater.dispatcher.add_handler(conv_handler5)
 updater.dispatcher.add_handler(conv_handler6)
-updater.dispatcher.add_handler(conv_handler7)
+#updater.dispatcher.add_handler(conv_handler7)
 
 updater.start_polling()
 ################################################################################

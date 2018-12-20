@@ -3,14 +3,24 @@ import re
 import json
 from connection import create_connection, save
 
-def addbroadcastmsg(user_id, message):
+def get_exch(is_bittrex):
+	if bool(is_bittrex):
+		return 'bittrex'
+	else:
+		return 'binance'
+
+
+def addbroadcastmsg(channel_id, text):
+	channel = getchannelbyid(channel_id)
+	#neobtc:binance@0.0016
 
 	data = {
-		"tm_id": user_id,
-		"message": message
+		"channel_id": channel_id,
+		"message": text
 	}
 
 	save('broadcasting_msg', data)
+
 
 def get_users_by_channel_id(channel_id):
 	connection = create_connection()
@@ -41,7 +51,7 @@ def getusers_forbroadcastmessage():
 def getchannelbyid(channel_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `channel_name`, `oldchannel_name` FROM `channels` WHERE `id` = "+str(channel_id))
+	cursor.execute("SELECT `channel_name`, `oldchannel_name`, `ticker`, `is_bittrex` FROM `channels` WHERE `is_enable` = 1 AND `id` = "+str(channel_id))
 	ch = cursor.fetchone()	
 	connection.close()
 	return ch

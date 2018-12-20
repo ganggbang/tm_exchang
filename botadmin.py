@@ -18,12 +18,14 @@ def start(bot, update):
 	update.message.reply_text(main_menu_message(),
 		reply_markup=main_menu_keyboard())
 
+
 def reg_menu(bot, update):
 	query = update.callback_query
 	#reply_markup = InlineKeyboardMarkup(keyboard)
 	bot.send_message(chat_id=query.message.chat_id,
 		text='Give your channel a name')
 	return REGISTER
+
 
 def main_menu(bot, update):
 	query = update.callback_query
@@ -32,12 +34,14 @@ def main_menu(bot, update):
 			text=main_menu_message(),
 			reply_markup=main_menu_keyboard())
 
+
 def view_menu(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 			message_id=query.message.message_id,
 			text=view_menu_message(),
 			reply_markup=view_menu_keyboard())
+
 
 def view_submenu1(bot, update):
 	query = update.callback_query
@@ -46,30 +50,6 @@ def view_submenu1(bot, update):
 		text=view_submenu1_message(),
 		reply_markup=view_submenu1_keyboard())
 
-def select_channels_adminmenu(bot, update):
-	query = update.callback_query
-
-	channels = get_binancechannels_admin()
-	keyboard = []
-
-	for ch in channels:
-		if ch['is_enable'] == 1:
-			keyboard.append([InlineKeyboardButton(ch['channel_name'], callback_data='vs1_21'+str(ch['id']))])
-		else:
-			keyboard.append([InlineKeyboardButton('* '+ch['channel_name'], callback_data='vs1_21'+str(ch['id']))])
-	keyboard.append([InlineKeyboardButton('View menu', callback_data='view')])
-
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text=select_channels_message(),
-		reply_markup=InlineKeyboardMarkup(keyboard))
-
-def view_editdefaultmessage(bot, update):
-	query = update.callback_query
-	bot.send_message(chat_id=query.message.chat_id,
-		text="To change your default message, you'll be needed to specify these variables for the followng: type 'x' to specify ticker, type 'z' to specify exchange, and type 'y' to specify price")
-
-	return VIEW_DEFAULTMESSAGE
 
 def view_submenu2(bot, update):
 	query = update.callback_query
@@ -78,12 +58,14 @@ def view_submenu2(bot, update):
 		text=view_submenu2_message(),
 		reply_markup=view_submenu2_keyboard())
 
+
 def view_submenu3(bot, update):
 	query = update.callback_query
 	bot.edit_message_text(chat_id=query.message.chat_id,
 		message_id=query.message.message_id,
 		text=view_submenu3_message(),
 		reply_markup=view_submenu3_keyboard())
+
 
 def post_menu(bot, update):
 	query = update.callback_query
@@ -216,6 +198,7 @@ def channel_choice(bot, update, user_data):
 
 	return ConversationHandler.END
 
+
 def edit_defaultmessage(bot, update, user_data):
 	text = update.message.text
 
@@ -223,6 +206,7 @@ def edit_defaultmessage(bot, update, user_data):
 		reply_markup=view_menu_keyboard())
 
 	return ConversationHandler.END
+
 
 def view_editchannelname(bot, update, user_data):
 	query = update.callback_query
@@ -232,6 +216,7 @@ def view_editchannelname(bot, update, user_data):
 	bot.send_message(chat_id=query.message.chat_id,
 		text='Type channel name limited to 20 characters')
 	return VIEW
+
 
 def edit_channelname(bot, update, user_data):
 	text = update.message.text
@@ -250,16 +235,20 @@ def send_broadcastmessage(bot, update):
 	query = update.callback_query
 	q = query['data'].replace('vs_b', '')
 
-	ch = getchannelbyid(q[2:])
-	if(q[0:1] == 'y'):
-		users = getusers_forbroadcastmessage()
-		for u in users:
-			addbroadcastmsg(u['tm_id'], 'Announcement: Channel "'+ch['oldchannel_name']+'" has changed their name to "'+ch['channel_name']+'"')
+	try:
+		ch = getchannelbyid(q[2:])
+		if(q[0:1] == 'y'):
+			addbroadcastmsg(q[2:], 'Announcement: Channel "'+ch['oldchannel_name']+'" has changed their name to "'+ch['channel_name']+'"')
 
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text=main_menu_message(),
-		reply_markup=main_menu_keyboard())	
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			message_id=query.message.message_id,
+			text=main_menu_message(),
+			reply_markup=main_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+							  message_id=query.message.message_id,
+							  text="" + str(e),
+							  reply_markup=main_menu_keyboard())
 
 
 def ticker_binance_choiced(bot, update):
@@ -295,6 +284,8 @@ def ticker_binance_choice(bot, update):
 					keyboard.append(buttons)
 					buttons = []
 
+		print(i)
+		keyboard.append(buttons)
 		keyboard.append([InlineKeyboardButton("Post Trade", callback_data='post')])
 
 		bot.edit_message_text(chat_id=chat_id,
@@ -302,15 +293,10 @@ def ticker_binance_choice(bot, update):
 						  text="Choose the option in menu                              :",
 						  reply_markup=InlineKeyboardMarkup(keyboard))
 	except Exception as e:
-		print(e)
-	# assets = binance_get_all_tickers(user_id)
-	# for asset in assets:
-	# 	save('channels', data ={
-	# 		'ticker':asset['symbol'],
-	# 		'channel_name':asset['symbol'],
-	# 		'is_bittrex':'0',
-	# 		'is_enable':'1',
-	# 	})
+		bot.edit_message_text(chat_id=query.message.chat_id,
+							  message_id=query.message.message_id,
+							  text="" + str(e),
+							  reply_markup=main_menu_keyboard())
 
 
 def ticker_bittrex_choiced(bot, update):
@@ -323,6 +309,7 @@ def ticker_bittrex_choiced(bot, update):
 						  message_id=query.message.message_id,
 						  text="Choose the option in menu :",
 						  reply_markup=post_submenu_keyboard(channel_id))
+
 
 def ticker_bittrex_choice(bot, update):
 	query = update.callback_query
@@ -345,6 +332,7 @@ def ticker_bittrex_choice(bot, update):
 					keyboard.append(buttons)
 					buttons = []
 
+		keyboard.append(buttons)
 		keyboard.append([InlineKeyboardButton("Post Trade", callback_data='post')])
 
 		bot.edit_message_text(chat_id=chat_id,
@@ -352,74 +340,109 @@ def ticker_bittrex_choice(bot, update):
 						  text="Choose the option in menu                              :",
 						  reply_markup=InlineKeyboardMarkup(keyboard))
 	except Exception as e:
-		print(e)
-	# ticker = bittrex_getticker(user_id, text)
-	# if ticker:
-	# 	update.message.reply_text('Your {} ticker is valid'.format(text),
-	# 		reply_markup=post_submenu2_keyboard())
-	# else:
-	# 	update.message.reply_text('Your {} ticker is not valid'.format(text),
-	# 		reply_markup=post_submenu2_keyboard())
+		bot.edit_message_text(chat_id=query.message.chat_id,
+							  message_id=query.message.message_id,
+							  text="" + str(e),
+							  reply_markup=main_menu_keyboard())
 
 
-def custom_choice(bot, update):
-	update.message.reply_text('')
+def post_submenu1(bot, update, user_data):
+	channel_id = user_data['channel_id']
 
-	return MAIN_MENU
+	del user_data['channel_id']
+	price = update.message.text
+	channel = getchannelbyid(channel_id)
+	message = channel['ticker']+':'+get_exch(channel['is_bittrex'])+'@'+price
 
-def post_submenu1(bot, update):
-	text = update.message.text
-
+	addbroadcastmsg(str(channel_id), message)
 	update.message.reply_text(
-		"Broadcast has been sent to users for 'x' on 'z':",
+		"Broadcast has been sent to users for '"+channel['ticker']+"' on '"+get_exch(channel['is_bittrex'])+"':",
 		reply_markup=main_menu_keyboard()
 	)
 
 	return ConversationHandler.END
 
 
-# def received_information(bot, update, user_data):
-# 	text = update.message.text
-# 	category = user_data['choice']
-# 	user_data[category] = text
-# 	del user_data['choice']
-
-# 	update.message.reply_text("Neat! Just so you know, this is what you already told me:"
-# 							  "{}"
-# 							  "You can tell me more, or change your opinion on something.".format(
-# 								  facts_to_str(user_data)), reply_markup=markup)
-
-# 	return CHOOSING
-
 def default_msg(bot, update):
 	query = update.callback_query
-	chat_id = query.message.chat_id
+	user_id = query.message.chat_id
 
 	channel_id = query['data'].replace('default_', '')
+	channel = getchannelbyid(channel_id)
 
-	bot.edit_message_text(chat_id=chat_id,
-		message_id=query.message.message_id,
-		text="Broadcast has been sent to users for 'x' on 'z':",
-		reply_markup=main_menu_keyboard(),)
+	addbroadcastmsg(str(channel_id), getDefaultMsg())
+	update.message.reply_text(
+		"Broadcast has been sent to users for '"+channel['ticker']+"' on '"+get_exch(channel['is_bittrex'])+"':",
+		reply_markup=main_menu_keyboard()
+	)
 
 	return ConversationHandler.END
 
 
-def custom_msg(bot, update):
+def custom_msg(bot, update, user_data):
 	query = update.callback_query
 	chat_id = query.message.chat_id
+	user_data['channel_id'] = query['data'].replace('custom_', '')
 
-	channel_id = query['data'].replace('custom_', '')
 	bot.edit_message_text(chat_id=chat_id,
 		message_id=query.message.message_id,
-		text="type 'x' to specify ticker, type 'z' to specify exchange, and type 'y' to specify price:",
+			text="Please type your price:",
 		)
 
 	return POST
 
 
-def done(bot, update, user_data):
+def select_channels_adminmenu(bot, update):
+	query = update.callback_query
+	try:
+		channels = get_binancechannels_admin()
 
+		keyboard = []
+		rows = 5
+		i = 0
+		buttons = []
+		keyboard.append([InlineKeyboardButton("View menu", callback_data='view')])
+		for channel in channels:
+			i = i + 1
+			buttons.append(
+				InlineKeyboardButton(channel['channel_name'], callback_data='channel_binance_' + str(channel['id'])))
+			if i == rows:
+				i = 0
+				keyboard.append(buttons)
+				buttons = []
+
+		channels = get_bittrexchannels_admin()
+		for channel in channels:
+			i = i + 1
+			buttons.append(
+				InlineKeyboardButton(channel['channel_name'], callback_data='channel_bittrex_' + str(channel['id'])))
+			if i == rows:
+				i = 0
+				keyboard.append(buttons)
+				buttons = []
+
+		keyboard.append([InlineKeyboardButton('View menu', callback_data='view')])
+
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			message_id=query.message.message_id,
+			text=select_channels_message(),
+			reply_markup=InlineKeyboardMarkup(keyboard))
+
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+							  message_id=query.message.message_id,
+							  text="" + str(e),
+							  reply_markup=main_menu_keyboard())
+
+def view_editdefaultmessage(bot, update):
+	query = update.callback_query
+	bot.send_message(chat_id=query.message.chat_id,
+		text="To change your default message, you'll be needed to specify these variables for the followng: type 'x' to specify ticker, type 'z' to specify exchange, and type 'y' to specify price")
+
+	return VIEW_DEFAULTMESSAGE
+
+
+def done(bot, update, user_data):
 	return ConversationHandler.END
 
 
@@ -428,7 +451,6 @@ def error(bot, update, error):
 	logger.warning('Update "%s" caused error "%s"', update, error)
 
 
-# Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 					level=logging.INFO)
 
@@ -450,7 +472,7 @@ updater.dispatcher.add_handler(CallbackQueryHandler(main_menu, pattern='main'))
 
 #updater.dispatcher.add_handler(CallbackQueryHandler(reg_menu, pattern='register'))
 updater.dispatcher.add_handler(CallbackQueryHandler(post_menu, pattern='post'))
-#updater.dispatcher.add_handler(CallbackQueryHandler(post_submenu1, pattern='ps1'))
+
 updater.dispatcher.add_handler(CallbackQueryHandler(send_broadcastmessage, pattern='^vs_b'))
 
 updater.dispatcher.add_handler(CallbackQueryHandler(view_menu, pattern='view'))
@@ -459,6 +481,8 @@ updater.dispatcher.add_handler(CallbackQueryHandler(view_submenu2, pattern='^vs2
 updater.dispatcher.add_handler(CallbackQueryHandler(view_submenu3, pattern='^vs3$'))
 
 updater.dispatcher.add_handler(CallbackQueryHandler(select_channels_adminmenu, pattern='^vs1_21$'))
+updater.dispatcher.add_handler(CallbackQueryHandler(select_channels_adminmenu, pattern='^vs1_22$'))
+
 updater.dispatcher.add_handler(CallbackQueryHandler(ticker_binance_choice, pattern='^ps1$'))
 updater.dispatcher.add_handler(CallbackQueryHandler(ticker_bittrex_choice, pattern='^ps2$'))
 
@@ -473,7 +497,7 @@ conv_handler = ConversationHandler(
 	entry_points=[CallbackQueryHandler(reg_menu, pattern='register')],
 
 	states={
-		REGISTER: [MessageHandler(Filters.text,	channel_choice,	pass_user_data=True),],
+		REGISTER: [MessageHandler(Filters.text, channel_choice,	pass_user_data=True),],
 	},
 
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
@@ -481,15 +505,15 @@ conv_handler = ConversationHandler(
 
 conv_handler2 = ConversationHandler(
 	#per_message = True,
-	entry_points=[CallbackQueryHandler(default_msg, pattern='^default_'),
-					CallbackQueryHandler(custom_msg, pattern='^custom_')],
+	entry_points=[CallbackQueryHandler(default_msg, pattern='^default_', pass_user_data=True),
+					CallbackQueryHandler(custom_msg, pattern='^custom_', pass_user_data=True)],
 
 	states={
-		POST: [MessageHandler(Filters.text, post_submenu1),],
+		POST: [MessageHandler(Filters.text, post_submenu1, pass_user_data=True),],
 		#POST2: [MessageHandler(Filters.text, post_submenu2),],
 	},
 
-	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
+	fallbacks=[RegexHandler('^Done$', done)]
 )
 
 conv_handler3 = ConversationHandler(
@@ -497,10 +521,10 @@ conv_handler3 = ConversationHandler(
 	entry_points=[CallbackQueryHandler(view_editchannelname, pattern='^vs1_21', pass_user_data=True)],
 
 	states={
-		VIEW: [MessageHandler(Filters.text,	edit_channelname, pass_user_data=True),],
+		VIEW: [MessageHandler(Filters.text,	 edit_channelname, pass_user_data=True),],
 	},
 
-	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
+	fallbacks=[RegexHandler('^Done$', done)]
 )
 
 
@@ -512,7 +536,7 @@ conv_handler4 = ConversationHandler(
 		VIEW_DEFAULTMESSAGE: [MessageHandler(Filters.text, edit_defaultmessage, pass_user_data=True),],
 	},
 
-	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
+	fallbacks=[RegexHandler('^Done$', done)]
 )
 
 updater.dispatcher.add_handler(conv_handler)
