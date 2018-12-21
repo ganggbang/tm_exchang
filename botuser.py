@@ -24,10 +24,17 @@ def start(bot, update):
 
 def about_menu(bot, update):
 	query = update.callback_query
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		reply_markup=about_menu_keyboard(),
-		text=about_menu_message())
+	user_id = query.message.chat_id
+	if getbinanceapi(user_id) is None or getbittrexapi(user_id) is None:
+		bot.edit_message_text(chat_id=user_id,
+							  message_id=query.message.message_id,
+							  text=settings_submenu1_message(),
+							  reply_markup=settings_submenu1_keyboard())
+	else:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			message_id=query.message.message_id,
+			reply_markup=about_menu_keyboard(),
+			text=about_menu_message())
 
 
 def reg_menu(bot, update):
@@ -62,8 +69,15 @@ def main_menu(bot, update):
 
 def view_menu(bot, update):
 	query = update.callback_query
-	bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
-		text=view_menu_message(), reply_markup=view_menu_keyboard())
+	user_id = query.message.chat_id
+	if getbinanceapi(user_id) is None or getbittrexapi(user_id) is None:
+		bot.edit_message_text(chat_id=user_id,
+							  message_id=query.message.message_id,
+							  text=settings_submenu1_message(),
+							  reply_markup=settings_submenu1_keyboard())
+	else:
+		bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
+			text=view_menu_message(), reply_markup=view_menu_keyboard())
 
 
 def view_submenu1(bot, update):
@@ -559,7 +573,7 @@ def settings_menu_message():
 
 
 def settings_submenu1_message():
-	return 'Choose the option in menu:'
+	return 'Please enter your exchange`s API:'
 
 
 def settings_submenu2_message():

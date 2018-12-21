@@ -353,7 +353,7 @@ def DemoOff(user_id):
 def getbinanceapi(user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `binance_api` FROM `admins` WHERE `tm_id` = "+str(user_id))
+	cursor.execute("SELECT `binance_api` FROM `users` WHERE `tm_id` = "+str(user_id))
 	api = cursor.fetchone()
 	connection.close()
 	if api:
@@ -364,7 +364,7 @@ def getbinanceapi(user_id):
 def getbittrexapi(user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `bittrex_api` FROM `admins` WHERE `tm_id` = "+str(user_id))
+	cursor.execute("SELECT `bittrex_api` FROM `users` WHERE `tm_id` = "+str(user_id))
 	api = cursor.fetchone()
 	connection.close()
 	if api:

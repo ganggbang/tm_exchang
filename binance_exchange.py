@@ -218,10 +218,10 @@ def binance_timesync(client):
 	yy = int(uu)
 	tt = time.localtime(yy)
 
-	if sys.platform=='linux2':
+	if sys.platform == 'linux2':
 		pass
 
-	elif  sys.platform=='win32':
+	elif  sys.platform == 'win32':
 		import win32api
 		#print(tt)
 		win32api.SetSystemTime(tt[0], tt[1], 0, tt[2], tt[3], tt[4], tt[5], 0)
