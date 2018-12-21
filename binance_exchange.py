@@ -1,7 +1,8 @@
 from binance.client import Client
 from user import getbinanceapi
 import time
-import win32api
+import sys
+
 
 def getbinanceticker(chat_id, ticker):
 	full_api = getbinanceapi(chat_id)['binance_api']
@@ -211,15 +212,19 @@ def binance_get_server_time(chat_id):
 
 def binance_timesync(client):
 	gt = client.get_server_time()
-	#print(gt['serverTime'])
-	#print(time.localtime())
 	gg = int(gt['serverTime'])
 	ff = gg - 10799260
 	uu = ff / 1000
 	yy = int(uu)
 	tt = time.localtime(yy)
-	#print(tt)
-	win32api.SetSystemTime(tt[0], tt[1], 0, tt[2], tt[3], tt[4], tt[5], 0)
+
+	if sys.platform=='linux2':
+		pass
+
+	elif  sys.platform=='win32':
+		import win32api
+		#print(tt)
+		win32api.SetSystemTime(tt[0], tt[1], 0, tt[2], tt[3], tt[4], tt[5], 0)
 
 
 def binance_create_test_order(chat_id, **params):
