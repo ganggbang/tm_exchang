@@ -24,17 +24,11 @@ def start(bot, update):
 
 def about_menu(bot, update):
 	query = update.callback_query
-	user_id = query.message.chat_id
-	if getbinanceapi(user_id) is None or getbittrexapi(user_id) is None:
-		bot.edit_message_text(chat_id=user_id,
-							  message_id=query.message.message_id,
-							  text=settings_submenu1_message(),
-							  reply_markup=settings_submenu1_keyboard())
-	else:
-		bot.edit_message_text(chat_id=query.message.chat_id,
-			message_id=query.message.message_id,
-			reply_markup=about_menu_keyboard(),
-			text=about_menu_message())
+
+	bot.edit_message_text(chat_id=query.message.chat_id,
+		message_id=query.message.message_id,
+		reply_markup=about_menu_keyboard(),
+		text=about_menu_message())
 
 
 def reg_menu(bot, update):
