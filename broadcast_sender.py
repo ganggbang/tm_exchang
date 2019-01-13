@@ -62,5 +62,6 @@ for user in users:
 			for uc in get_usingchannels_byuserid(user['tm_id']):
 				if msg['channel_id'] == uc['channel_id']:
 					sendbroadcastmessages(bot, user['tm_id'], msg['message'], msg['id'])
+					setbroadcastmessages_sended(msg['id'])
 		except Exception as e:
 			print(e)
