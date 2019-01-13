@@ -22,7 +22,8 @@ def start(bot, update):
 def reg_menu(bot, update):
 	query = update.callback_query
 	#reply_markup = InlineKeyboardMarkup(keyboard)
-	bot.send_message(chat_id=query.message.chat_id,
+	bot.edit_message_text(chat_id=query.message.chat_id,
+		message_id=query.message.message_id,
 		text='Give your channel a name')
 	return REGISTER
 
@@ -213,7 +214,8 @@ def view_editchannelname(bot, update, user_data):
 	
 	user_data['channel_id'] = query['data'].replace('vs1_21', '')
 
-	bot.send_message(chat_id=query.message.chat_id,
+	bot.edit_message_text(chat_id=query.message.chat_id,
+		message_id=query.message.message_id,
 		text='Type channel name limited to 20 characters')
 	return VIEW
 
@@ -363,7 +365,7 @@ def post_submenu1(bot, update, user_data):
 	return ConversationHandler.END
 
 
-def default_msg(bot, update):
+def default_msg(bot, update, user_data):
 	query = update.callback_query
 	user_id = query.message.chat_id
 
@@ -382,7 +384,7 @@ def default_msg(bot, update):
 def custom_msg(bot, update, user_data):
 	query = update.callback_query
 	chat_id = query.message.chat_id
-	user_data['channel_id'] = query['data'].replace('custom_', '')
+	user_data['channel_id'] = query['data'].replace('custom_', '').replace('default_', '')
 
 	bot.edit_message_text(chat_id=chat_id,
 		message_id=query.message.message_id,
@@ -436,7 +438,8 @@ def select_channels_adminmenu(bot, update):
 
 def view_editdefaultmessage(bot, update):
 	query = update.callback_query
-	bot.send_message(chat_id=query.message.chat_id,
+	bot.edit_message_text(chat_id=query.message.chat_id,
+		message_id=query.message.message_id,
 		text="To change your default message, you'll be needed to specify these variables for the followng: type 'x' to specify ticker, type 'z' to specify exchange, and type 'y' to specify price")
 
 	return VIEW_DEFAULTMESSAGE
@@ -505,7 +508,7 @@ conv_handler = ConversationHandler(
 
 conv_handler2 = ConversationHandler(
 	#per_message = True,
-	entry_points=[CallbackQueryHandler(default_msg, pattern='^default_', pass_user_data=True),
+	entry_points=[CallbackQueryHandler(custom_msg, pattern='^default_',  pass_user_data=True),
 					CallbackQueryHandler(custom_msg, pattern='^custom_', pass_user_data=True)],
 
 	states={

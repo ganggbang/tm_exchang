@@ -37,7 +37,7 @@ def sendbroadcastmessages(bot, chat_id, message, message_id):
 	except Exception as e:
 		print(e)
 
-
+messages = getbroadcastmessages()
 users = get_users()
 for user in users:
 	take_profit = get_take_profit(user['tm_id'])
@@ -45,25 +45,22 @@ for user in users:
 
 	for order in orders:
 		if order['exchange'].upper() == 'BITTREX':
-			bit_order = bittrex_get_order(user['tm_id'], uuid=order['orderId'])
-			current_price = bittrex_getticker(user['tm_id'], market=order['ticker'])['result']['Ask']
+			bit_order = bittrex_get_order(user['tm_id'], uuid = order['orderId'])
+			current_price = bittrex_getticker(user['tm_id'], market = order['ticker'])['result']['Ask']
 			p = get_howpercentage(current_price, bit_order['result']['Price'])
 			if p >= 100 + take_profit:
-				bittrex_sell_limit(user['tm_id'], quantity=order['quantity'], market=order['ticker'], rate=current_price)
+				bittrex_sell_limit(user['tm_id'], quantity = order['quantity'], market = order['ticker'], rate = current_price)
 		elif order['exchange'].upper() == 'BINANCE':
-			bin_order = binance_get_order(user['tm_id'], symbol=order['ticker'], orderId=order['orderId'])
+			bin_order = binance_get_order(user['tm_id'], symbol = order['ticker'], orderId = order['orderId'])
 			current_price = binance_get_symbol_ticker(user['tm_id'], symbol=order['ticker'])
 			p = get_howpercentage(current_price, bin_order['price'])
 			if p >= 100 + take_profit:
-				r = binance_order_limit_sell(user['tm_id'], symbol=order['ticker'], quantity=order['quantity'], price=current_price)
+				r = binance_order_limit_sell(user['tm_id'], symbol = order['ticker'], quantity = order['quantity'], price = current_price)
 
-#for user in users:
-messages = getbroadcastmessages()
-
-for msg in messages:
-	try:
-		print(msg)
-		sendbroadcastmessages(bot, msg['tm_id'], msg['message'], msg['id'])
-	except Exception as e:
-		print(e)
-	#setbroadcastmessages_sended(msg['id'])
+	for msg in messages:
+		try:
+			for uc in get_usingchannels_byuserid(user['tm_id']):
+				if msg['channel_id'] == uc['channel_id']:
+					sendbroadcastmessages(bot, user['tm_id'], msg['message'], msg['id'])
+		except Exception as e:
+			print(e)

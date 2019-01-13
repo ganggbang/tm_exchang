@@ -118,7 +118,7 @@ def setbroadcastmessages_sended(message_id):
 def getbroadcastmessages():
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `message`,`tm_id`,`id` FROM `broadcasting_msg` WHERE `is_sended` = 0")
+	cursor.execute("SELECT `message`,`id`, `channel_id` FROM `broadcasting_msg` WHERE `is_sended` = 0")
 
 	messages = []
 	for ch in cursor.fetchall():
@@ -256,16 +256,21 @@ def get_usingchannels_byuserid(user_id):
 
 
 def checkuser(update):
-	user_id = update['message']['chat']['id']
-	user = {
-		"tm_id": update['message']['chat']['id'],
-		"first_name": update['message']['chat']['first_name'],
-		"last_name": update['message']['chat']['last_name'],
-		"username": update['message']['chat']['username']
-	}
-
 	if existing_user(user_id) is False:
+		user_id = update['message']['chat']['id']
+		user = {
+			"tm_id": update['message']['chat']['id'],
+			"first_name": update['message']['chat']['first_name'],
+			"last_name": update['message']['chat']['last_name'],
+			"username": update['message']['chat']['username']
+		}
+
+
 		save('users', user)
+		set_position_size_per(3, user_id)
+		set_spread_percent(3, user_id)
+		set_take_profit(30, user_id)
+
 
 
 def existing_user(user_id):
@@ -283,7 +288,7 @@ def existing_user(user_id):
 def get_users():
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `tm_id`,`bittrex_api`,`binance_api` FROM `users` WHERE `is_enable` = 1 AND `bittrex_api` is NOT NULL AND `binance_balance` is NOT NULL")
+	cursor.execute("SELECT `tm_id`, `bittrex_api`, `binance_api` FROM `users` WHERE `is_enable` = 1 AND `bittrex_api` is NOT NULL AND `binance_balance` is NOT NULL")
 
 	users = []
 	for u in cursor.fetchall():
@@ -375,17 +380,24 @@ def getbittrexapi(user_id):
 def setBittrexAPI(api, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "UPDATE `users` SET `bittrex_api`= '"+api.strip()+"' WHERE `tm_id` = "+str(user_id)
+	if existing_user(user_id):
+		sql = "UPDATE `users` SET `bittrex_api` = '"+api.strip()+"' WHERE `tm_id` = "+str(user_id)
+	else:
+		sql = "INSERT INTO `users` (`bittrex_api`, `tm_id`) VALUES ('"+api.strip()+"', ",+str(user_id)+")"
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
 	cursor.close()
 	connection.close()
 
+
 def setBinanceAPI(api, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "UPDATE `users` SET `binance_api`= '"+api.strip()+"' WHERE `tm_id` = "+str(user_id)
+	if existing_user(user_id):
+		sql = "UPDATE `users` SET `binance_api` = '"+api.strip()+"' WHERE `tm_id` = "+str(user_id)
+	else:
+		sql = "INSERT INTO `users` (`binance_api`, `tm_id`) VALUES('"+api.strip()+"', "+str(user_id)+")"
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
@@ -396,7 +408,10 @@ def setBinanceAPI(api, user_id):
 def set_position_size_per(position, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "REPLACE INTO `risk_settings` (`user_id`, `pos_size_per`) VALUES ("+str(user_id)+", "+str(position)+")"
+	if existing_user(user_id):
+		sql = "UPDATE `risk_settings` SET `pos_size_per` = "+str(position)+" WHERE `user_id` = "+str(user_id)
+	else:
+		sql = "INSERT INTO `risk_settings` (`user_id`, `pos_size_per`) VALUES ("+str(user_id)+", "+str(position)+")"
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
@@ -414,22 +429,13 @@ def get_position_size(user_id):
 	return data
 
 
-def setPositionAmountSize(position, user_id):
-	connection = create_connection()
-	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "REPLACE INTO `risk_settings` (`user_id`, `pos_size_amount`) VALUES ("+str(user_id)+", "+str(position)+")"
-	cursor.execute(sql)
-	cursor = connection.cursor()
-	connection.commit()
-	cursor.close()
-	connection.close()
-
-
 def set_spread_percent(spread, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "REPLACE INTO `risk_settings` (`user_id`, `spread_per`) VALUES ("+str(user_id)+", "+str(spread)+")"
-	print(sql)
+	if existing_user(user_id):
+		sql = "UPDATE `risk_settings` SET `spread_per` = "+str(spread)+" WHERE `user_id` = "+str(user_id)
+	else:
+		sql = "INSERT INTO `risk_settings` (`user_id`, `spread_per`) VALUES ("+str(user_id)+", "+str(spread)+")"
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
@@ -450,21 +456,16 @@ def get_spread_percent(user_id):
 def set_take_profit(profit, user_id):
 	connection = create_connection()
 	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "REPLACE INTO `risk_settings` (`user_id`, `take_profit`) VALUES ("+str(user_id)+", "+str(profit)+")"
+	if existing_user(user_id):
+		sql = "UPDATE `risk_settings` SET `take_profit` = "+str(profit)+" WHERE `user_id` = "+str(user_id)
+	else:
+		sql = "REPLACE INTO `risk_settings` (`user_id`, `take_profit`) VALUES ("+str(user_id)+", "+str(profit)+")"
 	#print(sql)
 	cursor.execute(sql)
 	cursor = connection.cursor()
 	connection.commit()
 	cursor.close()
 	connection.close()
-
-
-def get_howpercentage(part, whole):
-	return 100 * float(part)/float(whole)
-
-
-def get_percentage(percent, whole):
-	return(percent * float(whole)) / 100.0
 
 
 def get_take_profit(user_id):
@@ -477,36 +478,11 @@ def get_take_profit(user_id):
 	return float(data['take_profit'])
 
 
-def setStopLoss(stoploss, user_id):
-	connection = create_connection()
-	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "REPLACE INTO `risk_settings` (`user_id`, `stop_loss`) VALUES ("+str(user_id)+", "+str(stoploss)+")"
-	#print(sql)
-	cursor.execute(sql)
-	cursor = connection.cursor()
-	connection.commit()
-	cursor.close()
-	connection.close()
+def get_howpercentage(part, whole):
+	return 100 * float(part)/float(whole)
 
 
-def getStopLoss(user_id):
-	connection = create_connection()
-	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	cursor.execute("SELECT `stop_loss` FROM `risk_settings` WHERE `user_id` = "+str(user_id))
-	data = cursor.fetchone()
-	connection.close()
+def get_percentage(percent, whole):
+	return(percent * float(whole)) / 100.0
 
-	return data
-
-
-def setTrigger(trigger, user_id):
-	connection = create_connection()
-	cursor = connection.cursor(pymysql.cursors.DictCursor)
-	sql = "REPLACE INTO `trigger_hid` (`user_id`, `trigger_hid`) VALUES ("+str(trigger)+", "+str(user_id)+")"
-	#print(sql)
-	cursor.execute(sql)
-	cursor = connection.cursor()
-	connection.commit()
-	cursor.close()
-	connection.close()
 

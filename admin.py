@@ -14,12 +14,12 @@ def addbroadcastmsg(channel_id, text):
 	channel = getchannelbyid(channel_id)
 	#neobtc:binance@0.0016
 
-	data = {
-		"channel_id": channel_id,
-		"message": text
-	}
-
-	save('broadcasting_msg', data)
+	if text:
+		data = {
+			"channel_id": channel_id,
+			"message": text
+		}
+		save('broadcasting_msg', data)
 
 
 def get_users_by_channel_id(channel_id):
@@ -170,7 +170,7 @@ def getDefaultMsg():
 	
 	connection.close()
 	if msg:
-		return count['default_message']
+		return msg['default_message']
 	return False
 
 
@@ -182,7 +182,7 @@ def getCustomMsg():
 	
 	connection.close()
 	if msg:
-		return count['custom_message']
+		return msg['custom_message']
 	return False
 
 

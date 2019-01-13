@@ -14,12 +14,24 @@ from telegram.ext import (Updater, CommandHandler, CallbackQueryHandler, Message
 
 
 def start(bot, update):
-	query = update.callback_query
-	if existing_user(update['message']['chat']['id']) is True:
-		checkuser(update)
-		update.message.reply_text(reg_menu_message(), reply_markup=reg_menu_keyboard())
+	user_id = update['message']['chat']['id']
+
+	if existing_user(user_id):
+		#checkuser(update)
+		update.message.reply_text(main_menu_message(), reply_markup = main_menu_keyboard())
 	else:
-		update.message.reply_text(main_menu_message(), reply_markup=main_menu_keyboard())
+		user = {
+			"tm_id": str(user_id),
+			"first_name": str(update['message']['chat']['first_name']),
+			"last_name": str(update['message']['chat']['last_name']),
+			"username": str(update['message']['chat']['username'])
+		}
+
+		set_position_size_per(3, user_id)
+		save('users', user)
+
+		#checkuser(update)
+		update.message.reply_text(reg_menu_message(), reply_markup = reg_menu_keyboard())
 
 
 def about_menu(bot, update):
@@ -36,7 +48,7 @@ def reg_menu(bot, update):
 	user_id = query.message.chat_id
 
 	try:
-		if getbinanceapi(user_id) is None or getbittrexapi(user_id) is None:
+		if getbinanceapi(user_id)['binance_api'] is None or getbittrexapi(user_id)['bittrex_api'] is None:
 			bot.edit_message_text(chat_id = user_id,
 				  message_id = query.message.message_id,
 				  text = settings_submenu1_message(),
@@ -55,16 +67,30 @@ def reg_menu(bot, update):
 
 def main_menu(bot, update):
 	query = update.callback_query
-	bot.edit_message_text(chat_id=query.message.chat_id,
-		message_id=query.message.message_id,
-		text=main_menu_message(),
-		reply_markup=main_menu_keyboard())
+	user_id = query.message.chat_id
+
+	try:
+		if getbinanceapi(user_id)['binance_api'] is None or getbittrexapi(user_id)['bittrex_api'] is None:
+			bot.edit_message_text(chat_id=user_id,
+								  message_id=query.message.message_id,
+								  text=settings_submenu1_message(),
+								  reply_markup=settings_submenu1_keyboard())
+		else:
+			bot.edit_message_text(chat_id=query.message.chat_id,
+				message_id=query.message.message_id,
+				text=main_menu_message(),
+				reply_markup=main_menu_keyboard())
+	except Exception as e:
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			  message_id=query.message.message_id,
+			  text=""+str(e),
+			  reply_markup=main_menu_keyboard())
 
 
 def view_menu(bot, update):
 	query = update.callback_query
 	user_id = query.message.chat_id
-	if getbinanceapi(user_id) is None or getbittrexapi(user_id) is None:
+	if getbinanceapi(user_id)['binance_api'] is None or getbittrexapi(user_id)['bittrex_api'] is None:
 		bot.edit_message_text(chat_id=user_id,
 							  message_id=query.message.message_id,
 							  text=settings_submenu1_message(),
@@ -197,15 +223,17 @@ def settings_menu(bot, update):
 def possize_menu(bot, update):
 	query = update.callback_query
 
-	bot.send_message(chat_id=query.message.chat_id,
-		text="Position size is the amount of BTC used per trade, we recommend using anywhere from 3-5% of total account to mitigate risk")		
+	bot.edit_message_text(chat_id=query.message.chat_id,
+		message_id=query.message.message_id,
+		text="Position size is the amount of BTC used per trade, we recommend using anywhere from 3-5% of total account to mitigate risk")
 	return POS_SIZE
 
 
 def spread_menu(bot, update):
 	query = update.callback_query
 
-	bot.send_message(chat_id=query.message.chat_id,
+	bot.edit_message_text(chat_id=query.message.chat_id,
+		message_id=query.message.message_id,
 		text="The spread percent is a percentage added to bid price to increase chance of being executed. A response of '2.5' will add 2.5% to the bid price I.E: if current market price is $100 it will set the bid at $102.5")
 	return SPREAD
 
@@ -213,7 +241,8 @@ def spread_menu(bot, update):
 def proffit_menu(bot, update):
 	query = update.callback_query
 
-	bot.send_message(chat_id=query.message.chat_id,
+	bot.edit_message_text(chat_id=query.message.chat_id,
+		message_id=query.message.message_id,
 		text="Take profit is the price at which you want the trade to close at a profit, this is entered as a percentage that is added to the bid price executed. I.E: a response of '30', for an order executed at $100 will set a take profit at $130\", like wise a response of '250' sets the take profit at $250 or 250%")
 	return TAKE_PROFIT
 
@@ -221,7 +250,8 @@ def proffit_menu(bot, update):
 def stoploss_menu(bot, update):
 	query = update.callback_query
 
-	bot.send_message(chat_id=query.message.chat_id,
+	bot.edit_message_text(chat_id=query.message.chat_id,
+		message_id=query.message.message_id,
 		text="Stop loss is the price at which you want the trade to close at a loss, this is entered as a percentage that is subtracted to the bid price executed. I.E a reponse of '10' for an order executed at $100 will set the stop loss at $90, like wise a response of '80' sets the stop loss at $20 or -80%, valid responses range from 1-99")
 	return STOP_LOSS
 
@@ -229,7 +259,8 @@ def stoploss_menu(bot, update):
 def trigger_menu(bot, update):
 	query = update.callback_query
 
-	bot.send_message(chat_id=query.message.chat_id,
+	bot.edit_message_text(chat_id=query.message.chat_id,
+		message_id=query.message.message_id,
 		text="Hidden")
 	return TRIGGER
 
@@ -238,11 +269,13 @@ def apikey_menu(bot, update):
 	query = update.callback_query
 
 	if query['data'] == 'ss1_1':
-		bot.send_message(chat_id=query.message.chat_id,
+		bot.edit_message_text(chat_id = query.message.chat_id,
+			message_id = query.message.message_id,
 			text="Please enter your Bittrex API key in format 'api_key:private_key' and include the semi-colon")
 		return Bittrex_API
 	else:
-		bot.send_message(chat_id=query.message.chat_id,
+		bot.edit_message_text(chat_id=query.message.chat_id,
+			message_id = query.message.message_id,
 			text="Please enter your Binance API key in format 'api_key:private_key' and include the semi-colon")		
 		return Binance_API
 
@@ -345,7 +378,7 @@ def welcome_menu_keyboard():
 
 def reg_menu_keyboard():
 	keyboard = [[InlineKeyboardButton('Demo', callback_data='demo_afterreg')],
-				[InlineKeyboardButton('Paste in ChannelID', callback_data='paste_inchannelid')],
+				[InlineKeyboardButton('Add new channel', callback_data='paste_inchannelid')],
 				[InlineKeyboardButton('Main menu', callback_data='main')],]
 	return InlineKeyboardMarkup(keyboard)
 
@@ -656,7 +689,7 @@ def bittrex_api_choice(bot, update):
 	user_id = update['message']['chat']['id']
 	setBittrexAPI(text, user_id)
 
-	update.message.reply_text('Your {} API has been successfully added'.format(text.lower()),
+	update.message.reply_text('Your API has been successfully added',
 		reply_markup = main_menu_keyboard())
 
 	return ConversationHandler.END
@@ -667,7 +700,7 @@ def binance_api_choice(bot, update):
 
 	user_id = update['message']['chat']['id']
 	setBinanceAPI(text, user_id)
-	update.message.reply_text('Your {} API has been successfully added'.format(text.lower()),
+	update.message.reply_text('Your API has been successfully added',
 		reply_markup = main_menu_keyboard())
 
 	return ConversationHandler.END
@@ -708,6 +741,7 @@ def stoploss_choice(bot, update):
 	text = update.message.text
 	user_id = update['message']['chat']['id']
 	setStopLoss(text, user_id)
+
 	update.message.reply_text('Stop Loss {} saved'.format(text.lower()),
 		reply_markup = main_menu_keyboard())
 
@@ -726,15 +760,15 @@ def pastein_choise(bot, update):
 	return ConversationHandler.END
 
 
-def trigger_choice(bot, update):
-	text = update.message.text
-
-	user_id = update['message']['chat']['id']
-	setTrigger(text, user_id)
-	update.message.reply_text('Trigger {} saved'.format(text.lower()),
-		reply_markup=main_menu_keyboard())
-
-	return ConversationHandler.END
+# def trigger_choice(bot, update):
+# 	text = update.message.text
+#
+# 	user_id = update['message']['chat']['id']
+# 	setTrigger(text, user_id)
+# 	update.message.reply_text('Trigger {} saved'.format(text.lower()),
+# 		reply_markup=main_menu_keyboard())
+#
+# 	return ConversationHandler.END
 
 
 def action_demoon(bot, update):
@@ -777,10 +811,11 @@ def action_autooff(bot, update):
 def bittrex_bal(user_id):
 	text = '**Bittrex** '
 	balances = bittrex_getbalances(user_id)
-	for balance in balances['result']:
-		if balance['Balance'] > 0:
-			text += balance['Currency'] + ': ' + str(balance['Balance']) + ' Available: ' + str(
-				balance['Available']) + '\n'
+	if balances:
+		for balance in balances['result']:
+			if balance['Balance'] > 0:
+				text += balance['Currency'] + ': ' + str(balance['Balance']) + ' Available: ' + str(
+					balance['Available']) + '\n'
 	return text
 
 
@@ -806,10 +841,11 @@ def binance_bal(user_id):
 	balances = binance_getbalances(user_id)
 
 	text = '**Binance** '
-	for balance in balances['balances']:
-		if float(balance['free']) > 0:
-			text += balance['asset'] + ': ' + str(balance['free']) + ' Available: ' + str(
-				balance['free']) + '\n'
+	if balances:
+		for balance in balances['balances']:
+			if float(balance['free']) > 0:
+				text += balance['asset'] + ': ' + str(balance['free']) + ' Available: ' + str(
+					balance['free']) + '\n'
 
 	return text
 
@@ -1157,7 +1193,8 @@ def select_ordersclose_menu(bot, update):
 def paste_inchannelid(bot, update):
 	query = update.callback_query
 	user_id = query.message.chat_id
-	channels = get_bittrexchannels_admin()
+	#channels = get_bittrexchannels_admin()
+	channels = get_binancechannels_admin()
 	keyboard = []
 
 	try:
@@ -1206,6 +1243,8 @@ def view_submenu1_keyboard(user_id):
 				buttons = []
 
 		keyboard.append(buttons)
+
+	keyboard.append([InlineKeyboardButton('Add new channel', callback_data='paste_inchannelid')])
 	keyboard.append([InlineKeyboardButton('View menu', callback_data='view')])
 	return InlineKeyboardMarkup(keyboard)
 
@@ -1422,15 +1461,15 @@ conv_handler5 = ConversationHandler(
 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
 )
 
-conv_handler6 = ConversationHandler(
-	entry_points=[CallbackQueryHandler(trigger_menu, pattern='^ss3_5$'),],
-
-	states={
-		TRIGGER: [MessageHandler(Filters.text, trigger_choice),],
-	},
-
-	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
-)
+# conv_handler6 = ConversationHandler(
+# 	entry_points=[CallbackQueryHandler(trigger_menu, pattern='^ss3_5$'),],
+#
+# 	states={
+# 		TRIGGER: [MessageHandler(Filters.text, trigger_choice),],
+# 	},
+#
+# 	fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
+# )
 
 # conv_handler7 = ConversationHandler(
 # 	entry_points=[CallbackQueryHandler(pastein_menu, pattern='paste_inchannelid'),],
@@ -1447,7 +1486,7 @@ updater.dispatcher.add_handler(conv_handler2)
 updater.dispatcher.add_handler(conv_handler3)
 updater.dispatcher.add_handler(conv_handler4)
 updater.dispatcher.add_handler(conv_handler5)
-updater.dispatcher.add_handler(conv_handler6)
+#updater.dispatcher.add_handler(conv_handler6)
 #updater.dispatcher.add_handler(conv_handler7)
 
 updater.start_polling()
